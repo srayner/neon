@@ -1,65 +1,171 @@
-import Image from "next/image";
+import { Server, Container, Activity, AlertTriangle } from 'lucide-react';
+import { StatCard } from './components/StatCard';
+import { ServerStatusCard } from './components/ServerStatusCard';
 
-export default function Home() {
+type ServerHealth = 'healthy' | 'warning' | 'critical';
+
+interface ServerData {
+  id: number;
+  name: string;
+  containerCount: number;
+  cpu?: number;
+  memory?: number;
+  disk?: number;
+}
+
+interface Stats {
+  totalServers: number;
+  totalContainers: number;
+  avgCpu: number;
+  activeAlerts: number;
+}
+
+async function getStats(): Promise<Stats> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const res = await fetch(`${baseUrl}/api/stats`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch stats');
+  return res.json();
+}
+
+async function getServers(): Promise<ServerData[]> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const res = await fetch(`${baseUrl}/api/servers`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch servers');
+  return res.json();
+}
+
+function getServerHealth(cpu?: number, memory?: number): ServerHealth {
+  if (!cpu || !memory) return 'healthy';
+  if (cpu >= 80 || memory >= 85) return 'critical';
+  if (cpu >= 60 || memory >= 70) return 'warning';
+  return 'healthy';
+}
+
+const recentActivity = [
+  { time: '2 minutes ago', message: 'Container web-app restarted', type: 'warning' as const },
+  { time: '5 minutes ago', message: 'Server production-02 CPU usage high', type: 'critical' as const },
+  { time: '12 minutes ago', message: 'Deployment completed on staging-01', type: 'success' as const },
+  { time: '28 minutes ago', message: 'New container postgres-db started', type: 'info' as const },
+  { time: '1 hour ago', message: 'Backup completed successfully', type: 'success' as const },
+];
+
+const activityColors = {
+  warning: 'border-l-amber-400 bg-amber-500/5',
+  critical: 'border-l-red-400 bg-red-500/5',
+  success: 'border-l-emerald-400 bg-emerald-500/5',
+  info: 'border-l-cyan-400 bg-cyan-500/5',
+};
+
+export default async function Dashboard() {
+  const [stats, servers] = await Promise.all([getStats(), getServers()]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="h-full overflow-y-auto bg-zinc-950 p-8">
+      <div className="mx-auto max-w-7xl space-y-8">
+        {/* Header */}
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Dashboard
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-zinc-400">
+            Welcome back! Here's what's happening with your infrastructure.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Stats Grid */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Servers"
+            value={stats.totalServers}
+            icon={Server}
+            color="cyan"
+          />
+          <StatCard
+            title="Containers"
+            value={stats.totalContainers}
+            icon={Container}
+            color="purple"
+          />
+          <StatCard
+            title="Avg CPU Usage"
+            value={`${stats.avgCpu}%`}
+            icon={Activity}
+            color="pink"
+          />
+          <StatCard
+            title="Active Alerts"
+            value={stats.activeAlerts}
+            icon={AlertTriangle}
+            color="emerald"
+          />
         </div>
-      </main>
+
+        {/* Main Content Grid */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Server Status - 2 columns */}
+          <div className="lg:col-span-2">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-zinc-50">Server Status</h2>
+              <a
+                href="/servers"
+                className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+              >
+                View all →
+              </a>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {servers.map((server) => (
+                <ServerStatusCard
+                  key={server.id}
+                  name={server.name}
+                  status={getServerHealth(server.cpu, server.memory)}
+                  containerCount={server.containerCount}
+                  cpu={server.cpu}
+                  memory={server.memory}
+                  disk={server.disk}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Activity - 1 column */}
+          <div className="lg:col-span-1">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-zinc-50">Recent Activity</h2>
+            </div>
+            <div className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+              {recentActivity.map((activity, index) => (
+                <div
+                  key={index}
+                  className={`border-l-2 pl-3 py-2 ${activityColors[activity.type]}`}
+                >
+                  <p className="text-sm text-zinc-200">{activity.message}</p>
+                  <p className="mt-1 text-xs text-zinc-500">{activity.time}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="rounded-xl border border-zinc-800 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 p-6">
+          <h2 className="mb-4 text-xl font-semibold text-zinc-50">Quick Actions</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <button className="rounded-lg border border-cyan-500/30 bg-zinc-900/50 px-4 py-3 text-left text-sm font-medium text-zinc-100 transition-all hover:border-cyan-500/50 hover:bg-zinc-900 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+              Deploy Application
+            </button>
+            <button className="rounded-lg border border-purple-500/30 bg-zinc-900/50 px-4 py-3 text-left text-sm font-medium text-zinc-100 transition-all hover:border-purple-500/50 hover:bg-zinc-900 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+              View Metrics
+            </button>
+            <button className="rounded-lg border border-pink-500/30 bg-zinc-900/50 px-4 py-3 text-left text-sm font-medium text-zinc-100 transition-all hover:border-pink-500/50 hover:bg-zinc-900 hover:shadow-[0_0_15px_rgba(236,72,153,0.3)]">
+              Manage Containers
+            </button>
+            <button className="rounded-lg border border-emerald-500/30 bg-zinc-900/50 px-4 py-3 text-left text-sm font-medium text-zinc-100 transition-all hover:border-emerald-500/50 hover:bg-zinc-900 hover:shadow-[0_0_15px_rgba(52,211,153,0.3)]">
+              Server Settings
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

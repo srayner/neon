@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContainerStatus {
+  running
+  exited
+  paused
+  restarting
+}
+
+enum ServerStatus {
+  online
+  offline
+  maintenance
+}
+
+model Server {
+  id                    Int             @id @default(autoincrement())
+  name                  String          @unique
+  hostname              String?
+  ipAddress             String?         @map("ip_address")
+  status                ServerStatus    @default(online)
+
+  // Specs (relatively static)
+  cpuCores              Int?            @map("cpu_cores")
+  totalMemoryGb         Decimal?        @map("total_memory_gb") @db.Decimal(10, 2)
+  totalDiskGb           Decimal?        @map("total_disk_gb") @db.Decimal(10, 2)
+
+  // Current/Latest metrics (updated frequently)
+  currentCpuPercent     Decimal?        @map("current_cpu_percent") @db.Decimal(5, 2)
+  currentMemoryPercent  Decimal?        @map("current_memory_percent") @db.Decimal(5, 2)
+  currentDiskPercent    Decimal?        @map("current_disk_percent") @db.Decimal(5, 2)
+  lastMetricsAt         DateTime?       @map("last_metrics_at")
+
+  // Metadata
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  containers            Container[]
+  metrics               ServerMetric[]
+
+  @@map("server")
+}
+
+model ServerMetric {
+  id                Int       @id @default(autoincrement())
+  serverId          Int       @map("server_id")
+  timestamp         DateTime  @default(now())
+
+  // Percentage metrics
+  cpuPercent        Decimal   @map("cpu_percent") @db.Decimal(5, 2)
+  memoryPercent     Decimal   @map("memory_percent") @db.Decimal(5, 2)
+  diskPercent       Decimal   @map("disk_percent") @db.Decimal(5, 2)
+
+  // Absolute values
+  memoryUsedGb      Decimal   @map("memory_used_gb") @db.Decimal(10, 2)
+  memoryTotalGb     Decimal   @map("memory_total_gb") @db.Decimal(10, 2)
+  diskUsedGb        Decimal   @map("disk_used_gb") @db.Decimal(10, 2)
+  diskTotalGb       Decimal   @map("disk_total_gb") @db.Decimal(10, 2)
+
+  // Optional: network
+  networkRxBytes    BigInt?   @map("network_rx_bytes")
+  networkTxBytes    BigInt?   @map("network_tx_bytes")
+
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  server            Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId, timestamp(sort: Desc)])
+  @@map("server_metric")
+}
+
+model Container {
+  id           Int             @id @default(autoincrement())
+  containerId  String          @map("container_id")
+  serverId     Int             @map("server_id")
+  name         String
+  image        String
+  status       ContainerStatus
+  health       String?
+  ports        String
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  server       Server          @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, containerId])
+  @@map("container")
+}

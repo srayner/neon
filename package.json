@@ -1,19 +1,29 @@
 {
   "name": "neon",
-  "version": "0.1.0",
+  "version": "0.1.5",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sync": "tsx scripts/sync-containers.ts"
+    "sync": "tsx scripts/sync-containers.ts",
+    "build:shared": "npm run build -w @neon/shared",
+    "build:agent": "npm run build:shared && npm run build -w @neon/agent",
+    "agent:dev": "npm run build:shared && npm run dev -w @neon/agent",
+    "agent:start": "npm run start -w @neon/agent",
+    "agent:bundle": "npm run build:shared && npm run bundle -w @neon/agent",
+    "docker:build:agent": "npm run agent:bundle && docker build -t neon-agent:latest -f packages/agent/Dockerfile ."
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "@types/dockerode": "^4.0.0",
     "@types/node-cron": "^3.0.11",
     "dockerode": "^4.0.9",
+    "jose": "^6.1.3",
     "lucide-react": "^0.562.0",
     "next": "15.5.9",
     "node-cron": "^4.2.1",

@@ -1,0 +1,38 @@
+# Example docker-compose for running the Neon agent
+# Copy this file to your target server and configure environment variables
+
+services:
+  neon-agent:
+    image: neon-agent:latest
+    container_name: neon-agent
+    restart: unless-stopped
+    environment:
+      # Required
+      - SERVER_NAME=${SERVER_NAME:-my-server}
+      - MASTER_URL=${MASTER_URL:?MASTER_URL is required}
+      - AGENT_SECRET=${AGENT_SECRET:?AGENT_SECRET is required}
+      # Optional - intervals in seconds
+      - METRICS_INTERVAL=${METRICS_INTERVAL:-300}
+      - CONTAINERS_INTERVAL=${CONTAINERS_INTERVAL:-900}
+      - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL:-60}
+      # Optional - buffering
+      - BUFFER_ENABLED=${BUFFER_ENABLED:-true}
+      - BUFFER_MAX_SIZE=${BUFFER_MAX_SIZE:-100}
+    volumes:
+      # Mount Docker socket for container monitoring (read-only)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    # Add docker group for socket access (get GID with: stat -c '%g' /var/run/docker.sock)
+    group_add:
+      - ${DOCKER_GID:-999}
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    # Health check - agent is healthy if process is running
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "node"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

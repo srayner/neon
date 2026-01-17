@@ -1,0 +1,27 @@
+{
+  "name": "@neon/agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "bundle": "node esbuild.config.mjs",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/agent.cjs"
+  },
+  "dependencies": {
+    "@neon/shared": "*",
+    "dockerode": "^4.0.9",
+    "node-cron": "^4.2.1",
+    "systeminformation": "^5.30.4"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^4.0.0",
+    "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
+    "esbuild": "^0.27.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}

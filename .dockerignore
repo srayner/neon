@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+.next
+# Keep agent dist for bundled build
+packages/shared/dist
+!packages/agent/dist
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.dist
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+
+# Logs
+*.log
+
+# Docs and misc
+docs
+*.md
+!README.md

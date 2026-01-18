@@ -74,3 +74,29 @@ export async function isDockerAvailable(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Host OS information from Docker API
+ */
+export interface HostOsInfo {
+  osName: string;
+  osKernel: string;
+  osArch: string;
+}
+
+/**
+ * Get host OS information from Docker API
+ * This returns the actual host OS, not the container OS
+ */
+export async function getHostOsInfo(): Promise<HostOsInfo | null> {
+  try {
+    const info = await docker.info();
+    return {
+      osName: info.OperatingSystem || 'Unknown',
+      osKernel: info.KernelVersion || 'Unknown',
+      osArch: info.Architecture || 'Unknown',
+    };
+  } catch {
+    return null;
+  }
+}

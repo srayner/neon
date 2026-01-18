@@ -1,18 +1,26 @@
 import si from 'systeminformation';
 import type { ServerInfo, ServerMetrics } from '@neon/shared';
+import { getHostOsInfo } from './docker.js';
 
 /**
  * Collect static server information (called once at startup)
  */
 export async function getServerInfo(serverName: string): Promise<ServerInfo> {
-  const [cpu, mem, disk, os] = await Promise.all([
+  const [cpu, mem, disk, os, hostOs] = await Promise.all([
     si.cpu(),
     si.mem(),
     si.fsSize(),
     si.osInfo(),
+    getHostOsInfo(),
   ]);
 
   const totalDiskGb = disk.reduce((sum, d) => sum + d.size, 0) / (1024 ** 3);
+
+  // Use Docker host OS info when available (agent running in container),
+  // fall back to systeminformation for bare-metal installs
+  const osName = hostOs?.osName ?? os.distro;
+  const osKernel = hostOs?.osKernel ?? os.kernel;
+  const osArch = hostOs?.osArch ?? os.arch;
 
   return {
     name: serverName,
@@ -20,6 +28,10 @@ export async function getServerInfo(serverName: string): Promise<ServerInfo> {
     cpuCores: cpu.cores,
     totalMemoryGb: parseFloat((mem.total / (1024 ** 3)).toFixed(2)),
     totalDiskGb: parseFloat(totalDiskGb.toFixed(2)),
+    osName,
+    osVersion: os.release,
+    osKernel,
+    osArch,
   };
 }
 

@@ -1,8 +1,10 @@
+import Link from 'next/link';
 import { Server, Cpu, HardDrive, MemoryStick } from 'lucide-react';
 
 type ServerHealth = 'healthy' | 'warning' | 'critical';
 
 interface ServerStatusCardProps {
+  id: number;
   name: string;
   status: ServerHealth;
   containerCount: number;
@@ -33,6 +35,7 @@ const healthConfig = {
 };
 
 export function ServerStatusCard({
+  id,
   name,
   status,
   containerCount,
@@ -65,7 +68,12 @@ export function ServerStatusCard({
             <Server className="h-4 w-4" />
             Containers
           </span>
-          <span className="font-mono text-zinc-100">{containerCount}</span>
+          <Link
+            href={`/docker/containers?serverId=${id}`}
+            className="font-mono text-zinc-100 hover:text-cyan-400 transition-colors"
+          >
+            {containerCount}
+          </Link>
         </div>
 
         {cpu !== undefined && (

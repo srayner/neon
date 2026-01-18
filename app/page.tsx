@@ -117,6 +117,7 @@ export default async function Dashboard() {
               {servers.map((server) => (
                 <ServerStatusCard
                   key={server.id}
+                  id={server.id}
                   name={server.name}
                   status={getServerHealth(server.cpu, server.memory)}
                   containerCount={server.containerCount}

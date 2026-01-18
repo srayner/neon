@@ -39,8 +39,8 @@ export function ContainersTable({ containers }: ContainersTableProps) {
                 key={container.id}
                 className="transition-colors hover:bg-zinc-800/50"
               >
-                <td className="px-4 py-3.5 text-sm font-mono text-zinc-300 truncate" title={container.id}>
-                  {container.id}
+                <td className="px-4 py-3.5 text-sm font-mono text-zinc-300 truncate" title={container.containerId}>
+                  {container.containerId.slice(0, 12)}
                 </td>
                 <td className="px-4 py-3.5 text-sm font-medium text-zinc-100 truncate" title={container.name}>
                   {container.name}

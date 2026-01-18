@@ -46,9 +46,10 @@ export function ServerStatusCard({
   const health = healthConfig[status];
 
   return (
-    <div
+    <Link
+      href={`/servers/${id}`}
       className={`
-        group relative overflow-hidden rounded-xl border bg-zinc-900/50 p-5 transition-all hover:scale-[1.02]
+        group relative block overflow-hidden rounded-xl border bg-zinc-900/50 p-5 transition-all hover:scale-[1.02]
         ${health.border} ${health.glow}
       `}
     >
@@ -68,12 +69,7 @@ export function ServerStatusCard({
             <Server className="h-4 w-4" />
             Containers
           </span>
-          <Link
-            href={`/docker/containers?serverId=${id}`}
-            className="font-mono text-zinc-100 hover:text-cyan-400 transition-colors"
-          >
-            {containerCount}
-          </Link>
+          <span className="font-mono text-zinc-100">{containerCount}</span>
         </div>
 
         {cpu !== undefined && (
@@ -130,6 +126,6 @@ export function ServerStatusCard({
           </div>
         )}
       </div>
-    </div>
+    </Link>
   );
 }

@@ -133,17 +133,17 @@ export default async function ServersPage() {
                         className="transition-colors hover:bg-zinc-800/50"
                       >
                         <td className="px-4 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
+                          <Link href={`/servers/${server.id}`} className="flex items-center gap-3 group">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800 group-hover:bg-zinc-700 transition-colors">
                               <Server className="h-5 w-5 text-cyan-400" />
                             </div>
                             <div>
-                              <div className="font-medium text-zinc-100">{server.name}</div>
+                              <div className="font-medium text-zinc-100 group-hover:text-cyan-400 transition-colors">{server.name}</div>
                               <div className="text-sm text-zinc-500">
                                 {server.ipAddress || server.hostname || 'No address'}
                               </div>
                             </div>
-                          </div>
+                          </Link>
                         </td>
                         <td className="px-4 py-4">
                           <span className="inline-flex items-center gap-1.5">

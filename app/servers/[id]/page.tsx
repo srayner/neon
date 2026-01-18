@@ -284,7 +284,7 @@ export default async function ServerDetailPage({ params }: PageProps) {
               </span>
             </h2>
             <Link
-              href={`/docker/containers?serverId=${server.id}`}
+              href={`/containers?serverId=${server.id}`}
               className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
             >
               View all →
@@ -344,7 +344,7 @@ export default async function ServerDetailPage({ params }: PageProps) {
               {server.containers.length > 5 && (
                 <div className="border-t border-zinc-800 px-4 py-3 text-center">
                   <Link
-                    href={`/docker/containers?serverId=${server.id}`}
+                    href={`/containers?serverId=${server.id}`}
                     className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
                   >
                     View all {server.containers.length} containers →

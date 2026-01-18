@@ -14,7 +14,7 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Servers', href: '/servers', icon: Server },
-  { name: 'Containers', href: '/docker/containers', icon: Container },
+  { name: 'Containers', href: '/containers', icon: Container },
   { name: 'Applications', href: '/applications', icon: Package },
   { name: 'Metrics', href: '/metrics', icon: Activity },
   { name: 'Settings', href: '/settings', icon: Settings },

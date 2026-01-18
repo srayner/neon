@@ -23,7 +23,7 @@ async function getServers(): Promise<Server[]> {
 
 async function getContainers(serverId: number): Promise<Container[]> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/docker/containers?serverId=${serverId}`, {
+  const res = await fetch(`${baseUrl}/api/containers?serverId=${serverId}`, {
     cache: 'no-store',
   });
 
@@ -61,13 +61,13 @@ export default async function ContainersPage({ searchParams }: PageProps) {
   let serverId: number;
 
   if (!serverIdParam) {
-    redirect(`/docker/containers?serverId=${servers[0].id}`);
+    redirect(`/containers?serverId=${servers[0].id}`);
   }
 
   serverId = parseInt(serverIdParam, 10);
 
   if (isNaN(serverId) || !servers.some((s) => s.id === serverId)) {
-    redirect(`/docker/containers?serverId=${servers[0].id}`);
+    redirect(`/containers?serverId=${servers[0].id}`);
   }
 
   const selectedServer = servers.find((s) => s.id === serverId)!;

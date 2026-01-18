@@ -153,7 +153,7 @@ export default async function ServersPage() {
                         </td>
                         <td className="px-4 py-4">
                           <Link
-                            href={`/docker/containers?serverId=${server.id}`}
+                            href={`/containers?serverId=${server.id}`}
                             className="inline-flex items-center gap-1.5 text-sm text-zinc-300 hover:text-cyan-400 transition-colors"
                           >
                             <Container className="h-4 w-4" />

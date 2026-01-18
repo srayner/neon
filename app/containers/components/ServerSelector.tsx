@@ -18,7 +18,7 @@ export function ServerSelector({ servers, selectedServerId }: ServerSelectorProp
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newServerId = e.target.value;
-    router.push(`/docker/containers?serverId=${newServerId}`);
+    router.push(`/containers?serverId=${newServerId}`);
   };
 
   return (

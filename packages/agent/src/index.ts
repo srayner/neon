@@ -1,10 +1,12 @@
 import { loadConfig, printConfig } from './config.js';
 import { MasterClient } from './transport/client.js';
 import { Scheduler } from './scheduler.js';
+import { getVersion } from './version.js';
 
 async function main() {
+  const version = await getVersion();
   console.log('====================================');
-  console.log('  Neon Agent v0.1.0');
+  console.log(`  Neon Agent v${version}`);
   console.log('====================================');
   console.log('');
 
@@ -14,7 +16,7 @@ async function main() {
   console.log('');
 
   // Create client and scheduler
-  const client = new MasterClient(config);
+  const client = new MasterClient(config, version);
   const scheduler = new Scheduler(config, client);
 
   // Handle graceful shutdown

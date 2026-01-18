@@ -39,6 +39,12 @@ model Server {
   totalMemoryGb         Decimal?        @map("total_memory_gb") @db.Decimal(10, 2)
   totalDiskGb           Decimal?        @map("total_disk_gb") @db.Decimal(10, 2)
 
+  // Operating system info
+  osName                String?         @map("os_name")
+  osVersion             String?         @map("os_version")
+  osKernel              String?         @map("os_kernel")
+  osArch                String?         @map("os_arch")
+
   // Current/Latest metrics (updated frequently)
   currentCpuPercent     Decimal?        @map("current_cpu_percent") @db.Decimal(5, 2)
   currentMemoryPercent  Decimal?        @map("current_memory_percent") @db.Decimal(5, 2)

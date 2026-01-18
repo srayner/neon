@@ -1,4 +1,7 @@
 import { build } from 'esbuild';
+import { readFileSync } from 'fs';
+
+const rootPkg = JSON.parse(readFileSync('../../package.json', 'utf-8'));
 
 await build({
   entryPoints: ['src/index.ts'],
@@ -17,6 +20,11 @@ await build({
 
   // Minify for smaller output
   minify: true,
+
+  // Inject version from root package.json
+  define: {
+    'process.env.AGENT_VERSION': JSON.stringify(rootPkg.version),
+  },
 });
 
 console.log('Bundle complete: dist/agent.cjs');

@@ -46,6 +46,10 @@ export async function GET(
       disk: server.currentDiskPercent ? Number(server.currentDiskPercent) : undefined,
       lastMetricsAt: server.lastMetricsAt,
       createdAt: server.createdAt,
+      osName: server.osName,
+      osVersion: server.osVersion,
+      osKernel: server.osKernel,
+      osArch: server.osArch,
       containers: server.containers.map((c) => ({
         id: c.id,
         containerId: c.containerId,

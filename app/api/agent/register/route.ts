@@ -36,6 +36,10 @@ export async function POST(request: NextRequest) {
         cpuCores: serverInfo.cpuCores,
         totalMemoryGb: new Decimal(serverInfo.totalMemoryGb.toFixed(2)),
         totalDiskGb: new Decimal(serverInfo.totalDiskGb.toFixed(2)),
+        osName: serverInfo.osName,
+        osVersion: serverInfo.osVersion,
+        osKernel: serverInfo.osKernel,
+        osArch: serverInfo.osArch,
         status: 'online',
       },
       create: {
@@ -44,6 +48,10 @@ export async function POST(request: NextRequest) {
         cpuCores: serverInfo.cpuCores,
         totalMemoryGb: new Decimal(serverInfo.totalMemoryGb.toFixed(2)),
         totalDiskGb: new Decimal(serverInfo.totalDiskGb.toFixed(2)),
+        osName: serverInfo.osName,
+        osVersion: serverInfo.osVersion,
+        osKernel: serverInfo.osKernel,
+        osArch: serverInfo.osArch,
         status: 'online',
       },
     });

@@ -11,18 +11,18 @@ import type {
 } from '@neon/shared';
 import type { AgentConfig } from '../config.js';
 
-const AGENT_VERSION = '0.1.0';
-
 /**
  * HTTP client for communicating with master server
  */
 export class MasterClient {
   private config: AgentConfig;
+  private version: string;
   private token: string | null = null;
   private serverId: number | null = null;
 
-  constructor(config: AgentConfig) {
+  constructor(config: AgentConfig, version: string) {
     this.config = config;
+    this.version = version;
   }
 
   /**
@@ -34,7 +34,7 @@ export class MasterClient {
     const body: AgentRegistrationRequest = {
       serverName: this.config.serverName,
       serverInfo,
-      agentVersion: AGENT_VERSION,
+      agentVersion: this.version,
     };
 
     const response = await this.fetchWithRetry(url, {
@@ -132,7 +132,7 @@ export class MasterClient {
       },
       body: JSON.stringify({
         timestamp: new Date().toISOString(),
-        agentVersion: AGENT_VERSION,
+        agentVersion: this.version,
       }),
     });
 

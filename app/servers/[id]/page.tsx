@@ -37,6 +37,10 @@ interface ServerData {
   disk: number | undefined;
   lastMetricsAt: string | null;
   createdAt: string;
+  osName: string | null;
+  osVersion: string | null;
+  osKernel: string | null;
+  osArch: string | null;
   containers: ContainerData[];
 }
 
@@ -53,15 +57,6 @@ async function getServer(id: string): Promise<ServerData | null> {
 
   return res.json();
 }
-
-// Fake OS data (hardcoded for now)
-const osInfo = {
-  name: 'Ubuntu',
-  version: '22.04.3 LTS',
-  codename: 'Jammy Jellyfish',
-  kernel: '5.15.0-91-generic',
-  arch: 'x86_64',
-};
 
 // Fake applications data
 const fakeApplications = [
@@ -142,6 +137,107 @@ function MetricGauge({
   );
 }
 
+function OsLogo({ osName }: { osName: string }) {
+  const name = osName.toLowerCase();
+
+  // Ubuntu
+  if (name.includes('ubuntu')) {
+    return (
+      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#E95420]/10 border border-[#E95420]/30">
+        <svg viewBox="0 0 256 256" className="h-12 w-12">
+          <circle cx="128" cy="128" r="128" fill="#E95420" />
+          <circle cx="128" cy="128" r="113" fill="none" stroke="white" strokeWidth="14" />
+          <circle cx="128" cy="37" r="18" fill="white" />
+          <circle cx="207" cy="175" r="18" fill="white" />
+          <circle cx="49" cy="175" r="18" fill="white" />
+          <circle cx="128" cy="128" r="32" fill="white" />
+        </svg>
+      </div>
+    );
+  }
+
+  // Debian
+  if (name.includes('debian')) {
+    return (
+      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#A80030]/10 border border-[#A80030]/30">
+        <svg viewBox="0 0 256 256" className="h-12 w-12">
+          <circle cx="128" cy="128" r="128" fill="#A80030" />
+          <text x="128" y="160" textAnchor="middle" fill="white" fontSize="120" fontFamily="serif">D</text>
+        </svg>
+      </div>
+    );
+  }
+
+  // Windows
+  if (name.includes('windows')) {
+    return (
+      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#0078D4]/10 border border-[#0078D4]/30">
+        <svg viewBox="0 0 256 256" className="h-12 w-12">
+          <rect x="20" y="20" width="100" height="100" fill="#0078D4" />
+          <rect x="136" y="20" width="100" height="100" fill="#0078D4" />
+          <rect x="20" y="136" width="100" height="100" fill="#0078D4" />
+          <rect x="136" y="136" width="100" height="100" fill="#0078D4" />
+        </svg>
+      </div>
+    );
+  }
+
+  // macOS / Darwin
+  if (name.includes('macos') || name.includes('darwin') || name.includes('mac os')) {
+    return (
+      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-zinc-500/10 border border-zinc-500/30">
+        <svg viewBox="0 0 256 256" className="h-12 w-12">
+          <path d="M128 28c-22 0-25 21-47 21-18 0-33-15-33-15s-7 20-7 50c0 55 35 144 65 144 12 0 17-8 22-8s10 8 22 8c30 0 65-89 65-144 0-30-7-50-7-50s-15 15-33 15c-22 0-25-21-47-21z" fill="#555" />
+          <ellipse cx="170" cy="45" rx="15" ry="20" fill="#7CB342" />
+        </svg>
+      </div>
+    );
+  }
+
+  // CentOS / RHEL
+  if (name.includes('centos') || name.includes('red hat') || name.includes('rhel')) {
+    return (
+      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#932279]/10 border border-[#932279]/30">
+        <svg viewBox="0 0 256 256" className="h-12 w-12">
+          <circle cx="128" cy="128" r="120" fill="none" stroke="#932279" strokeWidth="16" />
+          <circle cx="128" cy="128" r="60" fill="#932279" />
+        </svg>
+      </div>
+    );
+  }
+
+  // Fedora
+  if (name.includes('fedora')) {
+    return (
+      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#3C6EB4]/10 border border-[#3C6EB4]/30">
+        <svg viewBox="0 0 256 256" className="h-12 w-12">
+          <circle cx="128" cy="128" r="120" fill="#3C6EB4" />
+          <text x="128" y="160" textAnchor="middle" fill="white" fontSize="100" fontWeight="bold">f</text>
+        </svg>
+      </div>
+    );
+  }
+
+  // Alpine
+  if (name.includes('alpine')) {
+    return (
+      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#0D597F]/10 border border-[#0D597F]/30">
+        <svg viewBox="0 0 256 256" className="h-12 w-12">
+          <polygon points="128,30 220,200 36,200" fill="#0D597F" />
+          <polygon points="128,80 180,180 76,180" fill="white" />
+        </svg>
+      </div>
+    );
+  }
+
+  // Default / Generic Linux
+  return (
+    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-zinc-800 border border-zinc-700">
+      <Terminal className="h-10 w-10 text-zinc-400" />
+    </div>
+  );
+}
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -200,37 +296,33 @@ export default async function ServerDetailPage({ params }: PageProps) {
             <Terminal className="h-5 w-5 text-purple-400" />
             Operating System
           </h2>
-          <div className="flex items-center gap-6">
-            {/* Ubuntu Logo */}
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#E95420]/10 border border-[#E95420]/30">
-              <svg viewBox="0 0 256 256" className="h-12 w-12">
-                <circle cx="128" cy="128" r="128" fill="#E95420" />
-                <circle cx="128" cy="128" r="113" fill="none" stroke="white" strokeWidth="14" />
-                <circle cx="128" cy="37" r="18" fill="white" />
-                <circle cx="207" cy="175" r="18" fill="white" />
-                <circle cx="49" cy="175" r="18" fill="white" />
-                <circle cx="128" cy="128" r="32" fill="white" />
-              </svg>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 flex-1">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">Distribution</p>
-                <p className="text-sm font-medium text-zinc-100 mt-1">{osInfo.name}</p>
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">Version</p>
-                <p className="text-sm font-medium text-zinc-100 mt-1">{osInfo.version}</p>
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">Kernel</p>
-                <p className="text-sm font-medium text-zinc-100 mt-1 font-mono">{osInfo.kernel}</p>
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">Architecture</p>
-                <p className="text-sm font-medium text-zinc-100 mt-1 font-mono">{osInfo.arch}</p>
+          {server.osName ? (
+            <div className="flex items-center gap-6">
+              {/* OS Logo */}
+              <OsLogo osName={server.osName} />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 flex-1">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Distribution</p>
+                  <p className="text-sm font-medium text-zinc-100 mt-1">{server.osName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Version</p>
+                  <p className="text-sm font-medium text-zinc-100 mt-1">{server.osVersion || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Kernel</p>
+                  <p className="text-sm font-medium text-zinc-100 mt-1 font-mono">{server.osKernel || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Architecture</p>
+                  <p className="text-sm font-medium text-zinc-100 mt-1 font-mono">{server.osArch || '-'}</p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <p className="text-sm text-zinc-500">OS information not available. Agent may need to re-register.</p>
+          )
+          }
         </div>
 
         {/* Metrics Section */}

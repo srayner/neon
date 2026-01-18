@@ -7,6 +7,10 @@ export interface ServerInfo {
   cpuCores: number;
   totalMemoryGb: number;
   totalDiskGb: number;
+  osName: string;
+  osVersion: string;
+  osKernel: string;
+  osArch: string;
 }
 
 /**

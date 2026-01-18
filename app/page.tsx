@@ -78,6 +78,7 @@ export default async function Dashboard() {
             title="Total Servers"
             value={stats.totalServers}
             icon={Server}
+            href="/servers"
             color="cyan"
           />
           <StatCard

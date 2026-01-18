@@ -1,9 +1,11 @@
+import Link from 'next/link';
 import { LucideIcon } from 'lucide-react';
 
 interface StatCardProps {
   title: string;
   value: string | number;
   icon: LucideIcon;
+  href?: string;
   trend?: {
     value: string;
     positive: boolean;
@@ -38,10 +40,10 @@ const colorClasses = {
   },
 };
 
-export function StatCard({ title, value, icon: Icon, trend, color = 'cyan' }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, href, trend, color = 'cyan' }: StatCardProps) {
   const colors = colorClasses[color];
 
-  return (
+  const content = (
     <div
       className={`
         relative overflow-hidden rounded-xl border bg-gradient-to-br p-6 transition-all hover:scale-[1.02]
@@ -64,4 +66,10 @@ export function StatCard({ title, value, icon: Icon, trend, color = 'cyan' }: St
       </div>
     </div>
   );
+
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
+
+  return content;
 }

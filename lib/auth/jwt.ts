@@ -8,14 +8,21 @@ export interface AgentTokenPayload extends JWTPayload {
   serverName: string;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-change-in-production';
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required');
+  }
+  return secret;
+}
+
 const TOKEN_EXPIRY = '24h';
 
 /**
  * Get the secret key as Uint8Array for jose
  */
 function getSecretKey(): Uint8Array {
-  return new TextEncoder().encode(JWT_SECRET);
+  return new TextEncoder().encode(getJwtSecret());
 }
 
 /**

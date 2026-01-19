@@ -27,6 +27,26 @@ enum ServerStatus {
   maintenance
 }
 
+enum ServiceStatus {
+  healthy
+  degraded
+  down
+}
+
+enum ServiceType {
+  application
+  database
+  website
+  agent
+  infrastructure
+}
+
+enum DependencyType {
+  requires
+  uses
+  optional
+}
+
 model Server {
   id                    Int             @id @default(autoincrement())
   name                  String          @unique
@@ -58,6 +78,7 @@ model Server {
   // Relations
   containers            Container[]
   metrics               ServerMetric[]
+  services              Service[]
 
   @@map("server")
 }
@@ -95,17 +116,59 @@ model Container {
   id           Int             @id @default(autoincrement())
   containerId  String          @map("container_id")
   serverId     Int             @map("server_id")
+  serviceId    Int?            @map("service_id")
   name         String
   image        String
   status       ContainerStatus
   health       String?
   ports        String
+  labels       Json            @default("{}")
+  networks     String[]        @default([])
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
 
   // Relations
   server       Server          @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  service      Service?        @relation(fields: [serviceId], references: [id], onDelete: SetNull)
 
   @@unique([serverId, containerId])
   @@map("container")
+}
+
+model Service {
+  id              Int           @id @default(autoincrement())
+  serverId        Int           @map("server_id")
+  name            String
+  description     String?
+  serviceType     ServiceType?  @map("service_type")
+  composeProject  String?       @map("compose_project")
+  composeService  String?       @map("compose_service")
+  status          ServiceStatus @default(healthy)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  server          Server        @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  containers      Container[]
+  dependsOn       ServiceDependency[] @relation("DependentService")
+  dependedOnBy    ServiceDependency[] @relation("DependencyService")
+
+  @@unique([serverId, composeProject, composeService])
+  @@map("service")
+}
+
+model ServiceDependency {
+  id              Int            @id @default(autoincrement())
+  serviceId       Int            @map("service_id")
+  dependsOnId     Int            @map("depends_on_id")
+  dependencyType  DependencyType @default(requires) @map("dependency_type")
+  inferred        Boolean        @default(false)
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  // Relations
+  service         Service        @relation("DependentService", fields: [serviceId], references: [id], onDelete: Cascade)
+  dependsOn       Service        @relation("DependencyService", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, dependsOnId])
+  @@map("service_dependency")
 }

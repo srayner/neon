@@ -22,6 +22,22 @@ export async function GET(
         containers: {
           orderBy: { name: 'asc' },
         },
+        services: {
+          include: {
+            containers: true,
+            dependsOn: {
+              include: {
+                dependsOn: { select: { id: true, name: true, composeService: true, status: true } },
+              },
+            },
+            dependedOnBy: {
+              include: {
+                service: { select: { id: true, name: true, composeService: true, status: true } },
+              },
+            },
+          },
+          orderBy: { name: 'asc' },
+        },
       },
     });
 
@@ -58,6 +74,36 @@ export async function GET(
         status: c.status,
         health: c.health,
         ports: c.ports,
+      })),
+      services: server.services.map((s) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        serviceType: s.serviceType,
+        composeProject: s.composeProject,
+        composeService: s.composeService,
+        status: s.status,
+        containers: s.containers.map((c) => ({
+          id: c.id,
+          containerId: c.containerId,
+          name: c.name,
+          status: c.status,
+          health: c.health,
+        })),
+        dependsOn: s.dependsOn.map((d) => ({
+          id: d.dependsOn.id,
+          name: d.dependsOn.name,
+          composeService: d.dependsOn.composeService,
+          status: d.dependsOn.status,
+          dependencyType: d.dependencyType,
+          inferred: d.inferred,
+        })),
+        dependedOnBy: s.dependedOnBy.map((d) => ({
+          id: d.service.id,
+          name: d.service.name,
+          composeService: d.service.composeService,
+          status: d.service.status,
+        })),
       })),
     };
 

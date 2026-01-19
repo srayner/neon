@@ -49,4 +49,6 @@ export interface ContainerInfo {
   status: ContainerStatus;
   health: ContainerHealth;
   ports: string;
+  labels: Record<string, string>;
+  networks: string[];
 }

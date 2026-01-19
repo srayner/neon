@@ -50,6 +50,8 @@ export async function collectContainers(): Promise<ContainerInfo[]> {
       status: mapDockerStatus(container.State),
       health: getHealthStatus(container),
       ports: formatPorts(container.Ports),
+      labels: container.Labels || {},
+      networks: Object.keys(container.NetworkSettings?.Networks || {}),
     }));
   } catch (error) {
     // Docker might not be available

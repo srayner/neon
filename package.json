@@ -1,6 +1,6 @@
 {
   "name": "neon",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -10,11 +10,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sync": "tsx scripts/sync-containers.ts",
     "build:shared": "npm run build -w @neon/shared",
     "build:agent": "npm run build:shared && npm run build -w @neon/agent",
-    "agent:dev": "npm run build:shared && npm run dev -w @neon/agent",
-    "agent:start": "npm run start -w @neon/agent",
+    "agent:dev": "npm run build:shared && dotenv -e packages/agent/.env -- npm run dev -w @neon/agent",
+    "agent:start": "dotenv -e packages/agent/.env -- npm run start -w @neon/agent",
     "agent:bundle": "npm run build:shared && npm run bundle -w @neon/agent",
     "docker:build:agent": "npm run agent:bundle && docker build -t neon-agent:latest -f packages/agent/Dockerfile ."
   },
@@ -37,6 +36,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.9",
     "tailwindcss": "^4",

@@ -48,14 +48,14 @@ export async function collectMetrics(): Promise<ServerMetrics> {
 
   // Calculate percentages
   const cpuPercent = cpuLoad.currentLoad;
-  const memoryPercent = (mem.used / mem.total) * 100;
+  const memoryPercent = (mem.active / mem.total) * 100;
 
   const totalDiskSize = disk.reduce((sum, d) => sum + d.size, 0);
   const totalDiskUsed = disk.reduce((sum, d) => sum + d.used, 0);
   const diskPercent = totalDiskSize > 0 ? (totalDiskUsed / totalDiskSize) * 100 : 0;
 
   // Convert to GB
-  const memoryUsedGb = mem.used / (1024 ** 3);
+  const memoryUsedGb = mem.active / (1024 ** 3);
   const memoryTotalGb = mem.total / (1024 ** 3);
   const diskUsedGb = totalDiskUsed / (1024 ** 3);
   const diskTotalGb = totalDiskSize / (1024 ** 3);

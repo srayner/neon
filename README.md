@@ -60,17 +60,12 @@ npx tsx scripts/seed-servers.ts
 
 ### Running the Application
 
-1. Start the metrics collection service:
-```bash
-npm run sync
-```
-
-2. In a separate terminal, start the Next.js dev server:
+1. Start the Next.js dev server:
 ```bash
 npm run dev
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000)
+2. Open [http://localhost:3000](http://localhost:3000)
 
 ## Project Structure
 
@@ -82,14 +77,11 @@ neon/
 │   ├── docker/           # Docker containers page
 │   └── page.tsx          # Dashboard home page
 ├── lib/
-│   ├── docker-sync.ts    # Docker container synchronization
-│   ├── server-metrics.ts # Server metrics collection
 │   └── prisma.ts         # Prisma client singleton
 ├── prisma/
 │   └── schema.prisma     # Database schema
 └── scripts/
-    ├── seed-servers.ts   # Seed fake servers for demo
-    └── sync-containers.ts # Background sync service
+    └── seed-servers.ts   # Seed fake servers for demo
 ```
 
 ## Database Schema

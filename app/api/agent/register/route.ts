@@ -1,17 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { signAgentToken, validateAgentSecret } from '@/lib/auth/jwt';
-import { Decimal } from '@prisma/client/runtime/library';
-import type { AgentRegistrationRequest, AgentRegistrationResponse, ApiResponse } from '@neon/shared';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { signAgentToken, validateAgentSecret } from "@/lib/auth/jwt";
+import { Decimal } from "@prisma/client/runtime/library";
+import type {
+  AgentRegistrationRequest,
+  AgentRegistrationResponse,
+  ApiResponse,
+} from "@neon/shared";
 
 export async function POST(request: NextRequest) {
   try {
     // Validate agent secret
-    const agentSecret = request.headers.get('x-agent-secret');
+    const agentSecret = request.headers.get("x-agent-secret");
     if (!validateAgentSecret(agentSecret)) {
       return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Invalid or missing agent secret' },
-        { status: 401 }
+        { success: false, error: "Invalid or missing agent secret" },
+        { status: 401 },
       );
     }
 
@@ -21,12 +25,17 @@ export async function POST(request: NextRequest) {
 
     if (!serverName || !serverInfo) {
       return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Missing required fields: serverName, serverInfo' },
-        { status: 400 }
+        {
+          success: false,
+          error: "Missing required fields: serverName, serverInfo",
+        },
+        { status: 400 },
       );
     }
 
-    console.log(`[Agent Register] Registering agent: ${serverName} (v${agentVersion})`);
+    console.log(
+      `[Agent Register] Registering agent: ${serverName} (v${agentVersion})`,
+    );
 
     // Upsert server record
     const server = await prisma.server.upsert({
@@ -40,7 +49,8 @@ export async function POST(request: NextRequest) {
         osVersion: serverInfo.osVersion,
         osKernel: serverInfo.osKernel,
         osArch: serverInfo.osArch,
-        status: 'online',
+        dockerVersion: serverInfo.dockerVersion,
+        status: "online",
       },
       create: {
         name: serverName,
@@ -52,7 +62,8 @@ export async function POST(request: NextRequest) {
         osVersion: serverInfo.osVersion,
         osKernel: serverInfo.osKernel,
         osArch: serverInfo.osArch,
-        status: 'online',
+        dockerVersion: serverInfo.dockerVersion,
+        status: "online",
       },
     });
 
@@ -62,7 +73,9 @@ export async function POST(request: NextRequest) {
       serverName: server.name,
     });
 
-    console.log(`[Agent Register] Agent registered successfully: ${serverName} (id: ${server.id})`);
+    console.log(
+      `[Agent Register] Agent registered successfully: ${serverName} (id: ${server.id})`,
+    );
 
     return NextResponse.json<ApiResponse<AgentRegistrationResponse>>({
       success: true,
@@ -72,10 +85,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[Agent Register] Error:', error);
+    console.error("[Agent Register] Error:", error);
     return NextResponse.json<ApiResponse>(
-      { success: false, error: 'Registration failed' },
-      { status: 500 }
+      { success: false, error: "Registration failed" },
+      { status: 500 },
     );
   }
 }

@@ -1,51 +1,59 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
     const serverId = parseInt(id, 10);
 
     if (isNaN(serverId)) {
-      return NextResponse.json(
-        { error: 'Invalid server ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid server ID" }, { status: 400 });
     }
 
     const server = await prisma.server.findUnique({
       where: { id: serverId },
       include: {
         containers: {
-          orderBy: { name: 'asc' },
+          orderBy: { name: "asc" },
         },
         services: {
           include: {
             containers: true,
             dependsOn: {
               include: {
-                dependsOn: { select: { id: true, name: true, composeService: true, status: true } },
+                dependsOn: {
+                  select: {
+                    id: true,
+                    name: true,
+                    composeService: true,
+                    status: true,
+                  },
+                },
               },
             },
             dependedOnBy: {
               include: {
-                service: { select: { id: true, name: true, composeService: true, status: true } },
+                service: {
+                  select: {
+                    id: true,
+                    name: true,
+                    composeService: true,
+                    status: true,
+                  },
+                },
               },
             },
           },
-          orderBy: { name: 'asc' },
+          orderBy: { name: "asc" },
         },
       },
     });
 
     if (!server) {
-      return NextResponse.json(
-        { error: 'Server not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Server not found" }, { status: 404 });
     }
 
     const serverData = {
@@ -55,17 +63,26 @@ export async function GET(
       ipAddress: server.ipAddress,
       status: server.status,
       cpuCores: server.cpuCores,
-      totalMemoryGb: server.totalMemoryGb ? Number(server.totalMemoryGb) : undefined,
+      totalMemoryGb: server.totalMemoryGb
+        ? Number(server.totalMemoryGb)
+        : undefined,
       totalDiskGb: server.totalDiskGb ? Number(server.totalDiskGb) : undefined,
-      cpu: server.currentCpuPercent ? Number(server.currentCpuPercent) : undefined,
-      memory: server.currentMemoryPercent ? Number(server.currentMemoryPercent) : undefined,
-      disk: server.currentDiskPercent ? Number(server.currentDiskPercent) : undefined,
+      cpu: server.currentCpuPercent
+        ? Number(server.currentCpuPercent)
+        : undefined,
+      memory: server.currentMemoryPercent
+        ? Number(server.currentMemoryPercent)
+        : undefined,
+      disk: server.currentDiskPercent
+        ? Number(server.currentDiskPercent)
+        : undefined,
       lastMetricsAt: server.lastMetricsAt,
       createdAt: server.createdAt,
       osName: server.osName,
       osVersion: server.osVersion,
       osKernel: server.osKernel,
       osArch: server.osArch,
+      dockerVersion: server.dockerVersion,
       containers: server.containers.map((c) => ({
         id: c.id,
         containerId: c.containerId,
@@ -109,10 +126,10 @@ export async function GET(
 
     return NextResponse.json(serverData);
   } catch (error) {
-    console.error('Error fetching server:', error);
+    console.error("Error fetching server:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch server' },
-      { status: 500 }
+      { error: "Failed to fetch server" },
+      { status: 500 },
     );
   }
 }

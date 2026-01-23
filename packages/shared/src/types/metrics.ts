@@ -11,6 +11,7 @@ export interface ServerInfo {
   osVersion: string;
   osKernel: string;
   osArch: string;
+  dockerVersion: string;
 }
 
 /**
@@ -32,12 +33,12 @@ export interface ServerMetrics {
 /**
  * Container status enum matching Prisma schema
  */
-export type ContainerStatus = 'running' | 'exited' | 'paused' | 'restarting';
+export type ContainerStatus = "running" | "exited" | "paused" | "restarting";
 
 /**
  * Container health status
  */
-export type ContainerHealth = 'healthy' | 'unhealthy' | 'starting' | null;
+export type ContainerHealth = "healthy" | "unhealthy" | "starting" | null;
 
 /**
  * Docker container information

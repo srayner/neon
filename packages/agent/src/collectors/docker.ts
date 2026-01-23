@@ -1,37 +1,43 @@
-import Docker from 'dockerode';
-import type { ContainerInfo, ContainerStatus, ContainerHealth } from '@neon/shared';
+import Docker from "dockerode";
+import type {
+  ContainerInfo,
+  ContainerStatus,
+  ContainerHealth,
+} from "@neon/shared";
 
 const docker = new Docker();
 
 function mapDockerStatus(state: string): ContainerStatus {
   const lowerState = state.toLowerCase();
-  if (lowerState === 'running') return 'running';
-  if (lowerState === 'exited') return 'exited';
-  if (lowerState === 'paused') return 'paused';
-  if (lowerState === 'restarting') return 'restarting';
-  return 'exited'; // Default fallback
+  if (lowerState === "running") return "running";
+  if (lowerState === "exited") return "exited";
+  if (lowerState === "paused") return "paused";
+  if (lowerState === "restarting") return "restarting";
+  return "exited"; // Default fallback
 }
 
 function formatPorts(ports: Docker.Port[]): string {
-  if (!ports || ports.length === 0) return '-';
+  if (!ports || ports.length === 0) return "-";
 
-  return ports
-    .map((port) => {
-      if (port.PublicPort && port.PrivatePort) {
-        return `${port.PublicPort}:${port.PrivatePort}`;
-      }
-      return port.PrivatePort ? `${port.PrivatePort}` : '';
-    })
-    .filter(Boolean)
-    .join(', ') || '-';
+  return (
+    ports
+      .map((port) => {
+        if (port.PublicPort && port.PrivatePort) {
+          return `${port.PublicPort}:${port.PrivatePort}`;
+        }
+        return port.PrivatePort ? `${port.PrivatePort}` : "";
+      })
+      .filter(Boolean)
+      .join(", ") || "-"
+  );
 }
 
 function getHealthStatus(container: Docker.ContainerInfo): ContainerHealth {
   const state = container.State;
 
-  if (state.includes('(healthy)')) return 'healthy';
-  if (state.includes('(unhealthy)')) return 'unhealthy';
-  if (state.includes('(health: starting)')) return 'starting';
+  if (state.includes("(healthy)")) return "healthy";
+  if (state.includes("(unhealthy)")) return "unhealthy";
+  if (state.includes("(health: starting)")) return "starting";
 
   return null;
 }
@@ -45,7 +51,7 @@ export async function collectContainers(): Promise<ContainerInfo[]> {
 
     return containers.map((container) => ({
       containerId: container.Id.substring(0, 12),
-      name: container.Names[0]?.replace(/^\//, '') || 'unknown',
+      name: container.Names[0]?.replace(/^\//, "") || "unknown",
       image: container.Image,
       status: mapDockerStatus(container.State),
       health: getHealthStatus(container),
@@ -55,10 +61,12 @@ export async function collectContainers(): Promise<ContainerInfo[]> {
     }));
   } catch (error) {
     // Docker might not be available
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT' ||
-        (error as NodeJS.ErrnoException).code === 'EACCES' ||
-        (error as NodeJS.ErrnoException).code === 'ECONNREFUSED') {
-      console.warn('[Docker] Docker is not available or accessible');
+    if (
+      (error as NodeJS.ErrnoException).code === "ENOENT" ||
+      (error as NodeJS.ErrnoException).code === "EACCES" ||
+      (error as NodeJS.ErrnoException).code === "ECONNREFUSED"
+    ) {
+      console.warn("[Docker] Docker is not available or accessible");
       return [];
     }
     throw error;
@@ -84,6 +92,7 @@ export interface HostOsInfo {
   osName: string;
   osKernel: string;
   osArch: string;
+  dockerVersion: string;
 }
 
 /**
@@ -94,9 +103,10 @@ export async function getHostOsInfo(): Promise<HostOsInfo | null> {
   try {
     const info = await docker.info();
     return {
-      osName: info.OperatingSystem || 'Unknown',
-      osKernel: info.KernelVersion || 'Unknown',
-      osArch: info.Architecture || 'Unknown',
+      osName: info.OperatingSystem || "Unknown",
+      osKernel: info.KernelVersion || "Unknown",
+      osArch: info.Architecture || "Unknown",
+      dockerVersion: info.ServerVersion || "Unknown",
     };
   } catch {
     return null;

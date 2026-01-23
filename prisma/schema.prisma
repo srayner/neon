@@ -65,6 +65,9 @@ model Server {
   osKernel              String?         @map("os_kernel")
   osArch                String?         @map("os_arch")
 
+  // Docker info
+  dockerVersion         String?         @map("docker_version")
+  
   // Current/Latest metrics (updated frequently)
   currentCpuPercent     Decimal?        @map("current_cpu_percent") @db.Decimal(5, 2)
   currentMemoryPercent  Decimal?        @map("current_memory_percent") @db.Decimal(5, 2)

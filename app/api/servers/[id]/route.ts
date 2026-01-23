@@ -99,6 +99,7 @@ export async function GET(
         serviceType: s.serviceType,
         composeProject: s.composeProject,
         composeService: s.composeService,
+        version: s.version,
         status: s.status,
         containers: s.containers.map((c) => ({
           id: c.id,

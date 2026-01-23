@@ -47,6 +47,8 @@ export interface ContainerInfo {
   containerId: string;
   name: string;
   image: string;
+  imageId: string | null;
+  imageTags: string[];
   status: ContainerStatus;
   health: ContainerHealth;
   ports: string;

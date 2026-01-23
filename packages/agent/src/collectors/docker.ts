@@ -43,16 +43,42 @@ function getHealthStatus(container: Docker.ContainerInfo): ContainerHealth {
 }
 
 /**
+ * Get image tags for a given image ID
+ */
+async function getImageTags(imageId: string): Promise<string[]> {
+  try {
+    const image = docker.getImage(imageId);
+    const imageInfo = await image.inspect();
+    return imageInfo.RepoTags || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Collect all Docker containers on this host
  */
 export async function collectContainers(): Promise<ContainerInfo[]> {
   try {
     const containers = await docker.listContainers({ all: true });
 
+    // Collect image tags for all unique images
+    const imageIds = [...new Set(containers.map((c) => c.ImageID).filter(Boolean))];
+    const imageTagsMap = new Map<string, string[]>();
+
+    await Promise.all(
+      imageIds.map(async (imageId) => {
+        const tags = await getImageTags(imageId);
+        imageTagsMap.set(imageId, tags);
+      })
+    );
+
     return containers.map((container) => ({
       containerId: container.Id.substring(0, 12),
       name: container.Names[0]?.replace(/^\//, "") || "unknown",
       image: container.Image,
+      imageId: container.ImageID || null,
+      imageTags: imageTagsMap.get(container.ImageID) || [],
       status: mapDockerStatus(container.State),
       health: getHealthStatus(container),
       ports: formatPorts(container.Ports),

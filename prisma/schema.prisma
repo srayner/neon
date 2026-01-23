@@ -122,6 +122,8 @@ model Container {
   serviceId    Int?            @map("service_id")
   name         String
   image        String
+  imageId      String?         @map("image_id")
+  imageTags    String[]        @default([]) @map("image_tags")
   status       ContainerStatus
   health       String?
   ports        String
@@ -146,6 +148,7 @@ model Service {
   serviceType     ServiceType?  @map("service_type")
   composeProject  String?       @map("compose_project")
   composeService  String?       @map("compose_service")
+  version         String?
   status          ServiceStatus @default(healthy)
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")

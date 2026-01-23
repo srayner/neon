@@ -59,6 +59,7 @@ interface ServiceData {
   serviceType: ServiceType | null;
   composeProject: string | null;
   composeService: string | null;
+  version: string | null;
   status: "healthy" | "degraded" | "down";
   containers: ServiceContainerData[];
   dependsOn: ServiceDependency[];
@@ -566,6 +567,11 @@ export default async function ServerDetailPage({ params }: PageProps) {
                         <div>
                           <h3 className="font-medium text-zinc-100">
                             {service.name}
+                            {service.version && (
+                              <span className="ml-2 text-sm font-normal text-zinc-400">
+                                {service.version}
+                              </span>
+                            )}
                           </h3>
                           <div className="flex items-center gap-2 mt-0.5">
                             {typeConfig && (

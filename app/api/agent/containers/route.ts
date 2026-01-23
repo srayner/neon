@@ -142,6 +142,44 @@ function calculateServiceStatus(containers: ContainerInfo[]): ServiceStatus {
   return 'degraded';
 }
 
+/**
+ * Extract a clean version number from Docker image tags
+ * Examples:
+ *   ["mysql:8.0.15", "mysql:8", "mysql:latest"] -> "8.0.15"
+ *   ["nginx:1.25.3-alpine", "nginx:latest"] -> "1.25.3"
+ *   ["redis:7.2-bookworm", "redis:7", "redis:latest"] -> "7.2"
+ */
+function extractVersionFromTags(imageTags: string[]): string | null {
+  if (!imageTags || imageTags.length === 0) return null;
+
+  // Extract tag portions (after the colon)
+  const tags = imageTags
+    .map(t => t.split(':')[1])
+    .filter(Boolean)
+    .filter(t => t !== 'latest');
+
+  if (tags.length === 0) return null;
+
+  // Score each tag by specificity (more version segments = more specific)
+  const scoredTags = tags.map(tag => {
+    // Extract version number pattern, ignoring any suffix
+    const versionMatch = tag.match(/^v?(\d+(?:\.\d+)*)/);
+    if (!versionMatch) return { score: 0, version: null };
+
+    const version = versionMatch[1];
+    const segments = version.split('.').length;
+
+    return { score: segments, version };
+  });
+
+  // Sort by score descending (most specific first)
+  scoredTags.sort((a, b) => b.score - a.score);
+
+  // Return the most specific version
+  const best = scoredTags.find(t => t.version);
+  return best?.version || null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Verify JWT token
@@ -195,10 +233,15 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Extract version from the first container's image tags
+      const primaryContainer = serviceGroup.containers[0];
+      const version = primaryContainer ? extractVersionFromTags(primaryContainer.imageTags) : null;
+
       const serviceData = {
         name: serviceGroup.name,
         description: serviceGroup.description,
         serviceType: serviceGroup.serviceType,
+        version,
         status: calculateServiceStatus(serviceGroup.containers),
       };
 
@@ -237,6 +280,8 @@ export async function POST(request: NextRequest) {
           update: {
             name: container.name,
             image: container.image,
+            imageId: container.imageId,
+            imageTags: container.imageTags,
             status: mapContainerStatus(container.status),
             health: container.health,
             ports: container.ports,
@@ -249,6 +294,8 @@ export async function POST(request: NextRequest) {
             containerId: container.containerId,
             name: container.name,
             image: container.image,
+            imageId: container.imageId,
+            imageTags: container.imageTags,
             status: mapContainerStatus(container.status),
             health: container.health,
             ports: container.ports,

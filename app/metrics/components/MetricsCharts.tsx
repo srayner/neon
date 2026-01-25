@@ -131,7 +131,7 @@ function SingleChart({ data, dataKey, color, title, range }: SingleChartProps) {
 }
 
 export function MetricsCharts({ serverId }: MetricsChartsProps) {
-  const [range, setRange] = useState<TimeRange>('7d');
+  const [range, setRange] = useState<TimeRange>('24h');
   const [data, setData] = useState<MetricsHistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

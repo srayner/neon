@@ -11,7 +11,7 @@ export interface ServerInfo {
   osVersion: string;
   osKernel: string;
   osArch: string;
-  dockerVersion: string;
+  dockerVersion: string | null;
 }
 
 /**
@@ -54,4 +54,5 @@ export interface ContainerInfo {
   ports: string;
   labels: Record<string, string>;
   networks: string[];
+  startedAt: string | null; // ISO 8601 timestamp
 }

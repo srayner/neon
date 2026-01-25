@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAgentToken, extractBearerToken } from '@/lib/auth/jwt';
+import { createActivity } from '@/lib/activity';
 import type { ContainersReportRequest, ApiResponse, ContainerStatus, ContainerInfo } from '@neon/shared';
-import type { ServiceStatus, ServiceType, DependencyType } from '@prisma/client';
+import type { ServiceStatus, ServiceType } from '@prisma/client';
 
 // Map shared ContainerStatus to Prisma ContainerStatus enum
 function mapContainerStatus(status: ContainerStatus): 'running' | 'exited' | 'paused' | 'restarting' {
@@ -214,12 +215,22 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Agent Containers] Receiving ${containers.length} container(s) from ${serverName}`);
 
+    // Fetch existing containers with startedAt for restart detection
+    const existingContainers = await prisma.container.findMany({
+      where: { serverId },
+      select: { id: true, containerId: true, name: true, status: true, startedAt: true },
+    });
+    const existingContainerMap = new Map(
+      existingContainers.map(c => [c.containerId, c])
+    );
+
     // Group containers into services
     const serviceGroups = groupContainersIntoServices(containers);
 
     // Track service IDs for cleanup and dependency resolution
     const activeServiceIds: number[] = [];
     const serviceByComposeService = new Map<string, number>(); // composeService -> serviceId
+    let restartCount = 0;
 
     // Upsert services and containers
     for (const serviceGroup of serviceGroups) {
@@ -270,6 +281,30 @@ export async function POST(request: NextRequest) {
 
       // Upsert containers for this service
       for (const container of serviceGroup.containers) {
+        const existing = existingContainerMap.get(container.containerId);
+
+        // Restart detection: container was running and has a new startedAt
+        if (existing && existing.startedAt && container.startedAt) {
+          const wasRunning = existing.status === 'running';
+          const hasNewStartTime = existing.startedAt.toISOString() !== container.startedAt;
+
+          if (wasRunning && hasNewStartTime) {
+            await createActivity({
+              type: 'warning',
+              entityType: 'container',
+              eventType: 'restart',
+              message: `Container ${container.name} restarted`,
+              serverId,
+              containerId: existing.id,
+              metadata: {
+                previousStartedAt: existing.startedAt.toISOString(),
+                newStartedAt: container.startedAt,
+              },
+            });
+            restartCount++;
+          }
+        }
+
         await prisma.container.upsert({
           where: {
             serverId_containerId: {
@@ -288,6 +323,7 @@ export async function POST(request: NextRequest) {
             labels: container.labels,
             networks: container.networks,
             serviceId: service.id,
+            startedAt: container.startedAt ? new Date(container.startedAt) : null,
           },
           create: {
             serverId,
@@ -302,6 +338,7 @@ export async function POST(request: NextRequest) {
             labels: container.labels,
             networks: container.networks,
             serviceId: service.id,
+            startedAt: container.startedAt ? new Date(container.startedAt) : null,
           },
         });
       }
@@ -381,7 +418,7 @@ export async function POST(request: NextRequest) {
 
     console.log(
       `[Agent Containers] Synced ${containers.length} container(s) in ${serviceGroups.length} service(s) ` +
-      `with ${dependencyCount} dependencies, deleted ${deleteContainersResult.count} container(s) ` +
+      `with ${dependencyCount} dependencies, ${restartCount} restart(s) detected, deleted ${deleteContainersResult.count} container(s) ` +
       `and ${deleteServicesResult.count} service(s) for ${serverName}`
     );
 

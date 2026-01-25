@@ -56,6 +56,23 @@ async function getImageTags(imageId: string): Promise<string[]> {
 }
 
 /**
+ * Get container startedAt timestamp via inspect
+ */
+async function getContainerStartedAt(containerId: string): Promise<string | null> {
+  try {
+    const details = await docker.getContainer(containerId).inspect();
+    const startedAt = details.State.StartedAt || null;
+    // Docker returns "0001-01-01T00:00:00Z" for never-started containers
+    if (startedAt?.startsWith("0001-01-01")) {
+      return null;
+    }
+    return startedAt;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Collect all Docker containers on this host
  */
 export async function collectContainers(): Promise<ContainerInfo[]> {
@@ -73,18 +90,26 @@ export async function collectContainers(): Promise<ContainerInfo[]> {
       })
     );
 
-    return containers.map((container) => ({
-      containerId: container.Id.substring(0, 12),
-      name: container.Names[0]?.replace(/^\//, "") || "unknown",
-      image: container.Image,
-      imageId: container.ImageID || null,
-      imageTags: imageTagsMap.get(container.ImageID) || [],
-      status: mapDockerStatus(container.State),
-      health: getHealthStatus(container),
-      ports: formatPorts(container.Ports),
-      labels: container.Labels || {},
-      networks: Object.keys(container.NetworkSettings?.Networks || {}),
-    }));
+    // Get detailed info for each container (for startedAt)
+    return Promise.all(
+      containers.map(async (container) => {
+        const startedAt = await getContainerStartedAt(container.Id);
+
+        return {
+          containerId: container.Id.substring(0, 12),
+          name: container.Names[0]?.replace(/^\//, "") || "unknown",
+          image: container.Image,
+          imageId: container.ImageID || null,
+          imageTags: imageTagsMap.get(container.ImageID) || [],
+          status: mapDockerStatus(container.State),
+          health: getHealthStatus(container),
+          ports: formatPorts(container.Ports),
+          labels: container.Labels || {},
+          networks: Object.keys(container.NetworkSettings?.Networks || {}),
+          startedAt,
+        };
+      })
+    );
   } catch (error) {
     // Docker might not be available
     if (

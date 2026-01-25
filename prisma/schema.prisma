@@ -47,6 +47,30 @@ enum DependencyType {
   optional
 }
 
+enum ActivityType {
+  warning
+  critical
+  success
+  info
+}
+
+enum EntityType {
+  server
+  container
+  service
+}
+
+enum EventType {
+  restart
+  status_change
+  version_change
+  health_change
+  created
+  removed
+  online
+  offline
+}
+
 model Server {
   id                    Int             @id @default(autoincrement())
   name                  String          @unique
@@ -82,6 +106,7 @@ model Server {
   containers            Container[]
   metrics               ServerMetric[]
   services              Service[]
+  activities            Activity[]
 
   @@map("server")
 }
@@ -129,12 +154,14 @@ model Container {
   ports        String
   labels       Json            @default("{}")
   networks     String[]        @default([])
+  startedAt    DateTime?       @map("started_at")
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
 
   // Relations
   server       Server          @relation(fields: [serverId], references: [id], onDelete: Cascade)
   service      Service?        @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  activities   Activity[]
 
   @@unique([serverId, containerId])
   @@map("container")
@@ -158,6 +185,7 @@ model Service {
   containers      Container[]
   dependsOn       ServiceDependency[] @relation("DependentService")
   dependedOnBy    ServiceDependency[] @relation("DependencyService")
+  activities      Activity[]
 
   @@unique([serverId, composeProject, composeService])
   @@map("service")
@@ -177,4 +205,26 @@ model ServiceDependency {
 
   @@unique([serviceId, dependsOnId])
   @@map("service_dependency")
+}
+
+model Activity {
+  id          Int          @id @default(autoincrement())
+  type        ActivityType
+  entityType  EntityType   @map("entity_type")
+  eventType   EventType    @map("event_type")
+  message     String
+  serverId    Int          @map("server_id")
+  containerId Int?         @map("container_id")
+  serviceId   Int?         @map("service_id")
+  metadata    Json         @default("{}")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  server      Server       @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  container   Container?   @relation(fields: [containerId], references: [id], onDelete: SetNull)
+  service     Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([serverId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("activity")
 }

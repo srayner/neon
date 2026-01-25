@@ -34,20 +34,26 @@ async function getServers(): Promise<ServerData[]> {
   return res.json();
 }
 
+interface ActivityData {
+  id: number;
+  type: 'warning' | 'critical' | 'success' | 'info';
+  message: string;
+  time: string;
+}
+
+async function getRecentActivities(): Promise<ActivityData[]> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const res = await fetch(`${baseUrl}/api/activities?limit=5`, { cache: 'no-store' });
+  if (!res.ok) return [];
+  return res.json();
+}
+
 function getServerHealth(cpu?: number, memory?: number): ServerHealth {
   if (!cpu || !memory) return 'healthy';
   if (cpu >= 80 || memory >= 85) return 'critical';
   if (cpu >= 60 || memory >= 70) return 'warning';
   return 'healthy';
 }
-
-const recentActivity = [
-  { time: '2 minutes ago', message: 'Container web-app restarted', type: 'warning' as const },
-  { time: '5 minutes ago', message: 'Server production-02 CPU usage high', type: 'critical' as const },
-  { time: '12 minutes ago', message: 'Deployment completed on staging-01', type: 'success' as const },
-  { time: '28 minutes ago', message: 'New container postgres-db started', type: 'info' as const },
-  { time: '1 hour ago', message: 'Backup completed successfully', type: 'success' as const },
-];
 
 const activityColors = {
   warning: 'border-l-amber-400 bg-amber-500/5',
@@ -57,7 +63,11 @@ const activityColors = {
 };
 
 export default async function Dashboard() {
-  const [stats, servers] = await Promise.all([getStats(), getServers()]);
+  const [stats, servers, activities] = await Promise.all([
+    getStats(),
+    getServers(),
+    getRecentActivities(),
+  ]);
 
   return (
     <div className="h-full overflow-y-auto bg-zinc-950 p-8">
@@ -136,15 +146,19 @@ export default async function Dashboard() {
               <h2 className="text-xl font-semibold text-zinc-50">Recent Activity</h2>
             </div>
             <div className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-              {recentActivity.map((activity, index) => (
-                <div
-                  key={index}
-                  className={`border-l-2 pl-3 py-2 ${activityColors[activity.type]}`}
-                >
-                  <p className="text-sm text-zinc-200">{activity.message}</p>
-                  <p className="mt-1 text-xs text-zinc-500">{activity.time}</p>
-                </div>
-              ))}
+              {activities.length === 0 ? (
+                <p className="text-sm text-zinc-500 py-4 text-center">No recent activity</p>
+              ) : (
+                activities.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className={`border-l-2 pl-3 py-2 ${activityColors[activity.type]}`}
+                  >
+                    <p className="text-sm text-zinc-200">{activity.message}</p>
+                    <p className="mt-1 text-xs text-zinc-500">{activity.time}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

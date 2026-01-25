@@ -1,40 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyAgentToken, extractBearerToken } from '@/lib/auth/jwt';
-import { createActivity } from '@/lib/activity';
-import type { ContainersReportRequest, ApiResponse, ContainerStatus, ContainerInfo } from '@neon/shared';
-import type { ServiceStatus, ServiceType } from '@prisma/client';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyAgentToken, extractBearerToken } from "@/lib/auth/jwt";
+import { createActivity } from "@/lib/activity";
+import type {
+  ContainersReportRequest,
+  ApiResponse,
+  ContainerStatus,
+  ContainerInfo,
+} from "@neon/shared";
+import type { ServiceStatus, ServiceType } from "@prisma/client";
 
 // Map shared ContainerStatus to Prisma ContainerStatus enum
-function mapContainerStatus(status: ContainerStatus): 'running' | 'exited' | 'paused' | 'restarting' {
+function mapContainerStatus(
+  status: ContainerStatus,
+): "running" | "exited" | "paused" | "restarting" {
   switch (status) {
-    case 'running':
-      return 'running';
-    case 'exited':
-      return 'exited';
-    case 'paused':
-      return 'paused';
-    case 'restarting':
-      return 'restarting';
+    case "running":
+      return "running";
+    case "exited":
+      return "exited";
+    case "paused":
+      return "paused";
+    case "restarting":
+      return "restarting";
     default:
-      return 'exited';
+      return "exited";
   }
 }
 
 // Docker Compose label keys
-const COMPOSE_PROJECT_LABEL = 'com.docker.compose.project';
-const COMPOSE_SERVICE_LABEL = 'com.docker.compose.service';
-const COMPOSE_DEPENDS_ON_LABEL = 'com.docker.compose.depends_on';
+const COMPOSE_PROJECT_LABEL = "com.docker.compose.project";
+const COMPOSE_SERVICE_LABEL = "com.docker.compose.service";
+const COMPOSE_DEPENDS_ON_LABEL = "com.docker.compose.depends_on";
 
 // Neon label keys
-const NEON_TYPE_LABEL = 'neon.type';
-const NEON_NAME_LABEL = 'neon.name';
-const NEON_DESCRIPTION_LABEL = 'neon.description';
-const NEON_DEPENDS_ON_LABEL = 'neon.depends_on';
-const NEON_DEPENDS_ON_OPTIONAL_LABEL = 'neon.depends_on.optional';
+const NEON_TYPE_LABEL = "neon.type";
+const NEON_NAME_LABEL = "neon.name";
+const NEON_DESCRIPTION_LABEL = "neon.description";
+const NEON_DEPENDS_ON_LABEL = "neon.depends_on";
+const NEON_DEPENDS_ON_OPTIONAL_LABEL = "neon.depends_on.optional";
 
 // Valid service types
-const VALID_SERVICE_TYPES: ServiceType[] = ['application', 'database', 'website', 'agent', 'infrastructure'];
+const VALID_SERVICE_TYPES: ServiceType[] = [
+  "application",
+  "database",
+  "website",
+  "agent",
+  "infrastructure",
+];
 
 function parseServiceType(value: string | undefined): ServiceType | null {
   if (!value) return null;
@@ -45,7 +58,10 @@ function parseServiceType(value: string | undefined): ServiceType | null {
 // Parse comma-separated dependency list
 function parseDependencyList(value: string | undefined): string[] {
   if (!value) return [];
-  return value.split(',').map(s => s.trim()).filter(Boolean);
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 // Group containers into services based on Docker Compose labels
@@ -56,11 +72,13 @@ interface ServiceGroup {
   composeProject: string | null;
   composeService: string | null;
   containers: ContainerInfo[];
-  dependsOn: string[];        // Required dependencies (compose service names)
+  dependsOn: string[]; // Required dependencies (compose service names)
   dependsOnOptional: string[]; // Optional dependencies
 }
 
-function groupContainersIntoServices(containers: ContainerInfo[]): ServiceGroup[] {
+function groupContainersIntoServices(
+  containers: ContainerInfo[],
+): ServiceGroup[] {
   const serviceMap = new Map<string, ServiceGroup>();
 
   for (const container of containers) {
@@ -86,15 +104,20 @@ function groupContainersIntoServices(containers: ContainerInfo[]): ServiceGroup[
     const neonType = parseServiceType(container.labels[NEON_TYPE_LABEL]);
 
     // Parse dependencies from neon labels
-    const neonDependsOn = parseDependencyList(container.labels[NEON_DEPENDS_ON_LABEL]);
-    const neonDependsOnOptional = parseDependencyList(container.labels[NEON_DEPENDS_ON_OPTIONAL_LABEL]);
+    const neonDependsOn = parseDependencyList(
+      container.labels[NEON_DEPENDS_ON_LABEL],
+    );
+    const neonDependsOnOptional = parseDependencyList(
+      container.labels[NEON_DEPENDS_ON_OPTIONAL_LABEL],
+    );
 
     // Parse implicit dependencies from docker-compose depends_on label
     // Format: "service1:condition,service2:condition"
-    const composeDependsOnRaw = container.labels[COMPOSE_DEPENDS_ON_LABEL] || '';
+    const composeDependsOnRaw =
+      container.labels[COMPOSE_DEPENDS_ON_LABEL] || "";
     const composeDependsOn = composeDependsOnRaw
-      .split(',')
-      .map(s => s.split(':')[0].trim())
+      .split(",")
+      .map((s) => s.split(":")[0].trim())
       .filter(Boolean);
 
     if (!serviceMap.has(serviceKey)) {
@@ -112,11 +135,20 @@ function groupContainersIntoServices(containers: ContainerInfo[]): ServiceGroup[
       // Merge labels from additional containers (first one wins for name/description/type)
       const existing = serviceMap.get(serviceKey)!;
       if (!existing.name && neonName) existing.name = neonName;
-      if (!existing.description && neonDescription) existing.description = neonDescription;
+      if (!existing.description && neonDescription)
+        existing.description = neonDescription;
       if (!existing.serviceType && neonType) existing.serviceType = neonType;
       // Merge dependencies (dedupe)
-      existing.dependsOn = [...new Set([...existing.dependsOn, ...neonDependsOn, ...composeDependsOn])];
-      existing.dependsOnOptional = [...new Set([...existing.dependsOnOptional, ...neonDependsOnOptional])];
+      existing.dependsOn = [
+        ...new Set([
+          ...existing.dependsOn,
+          ...neonDependsOn,
+          ...composeDependsOn,
+        ]),
+      ];
+      existing.dependsOnOptional = [
+        ...new Set([...existing.dependsOnOptional, ...neonDependsOnOptional]),
+      ];
     }
 
     serviceMap.get(serviceKey)!.containers.push(container);
@@ -127,20 +159,25 @@ function groupContainersIntoServices(containers: ContainerInfo[]): ServiceGroup[
 
 // Calculate service status based on container states
 function calculateServiceStatus(containers: ContainerInfo[]): ServiceStatus {
-  if (containers.length === 0) return 'down';
+  if (containers.length === 0) return "down";
 
-  const runningCount = containers.filter(c => c.status === 'running').length;
-  const healthyCount = containers.filter(c => c.health === 'healthy' || c.health === null).length;
+  const runningCount = containers.filter((c) => c.status === "running").length;
+  const healthyCount = containers.filter(
+    (c) => c.health === "healthy" || c.health === null,
+  ).length;
 
   if (runningCount === 0) {
-    return 'down';
+    return "down";
   }
 
-  if (runningCount === containers.length && healthyCount === containers.length) {
-    return 'healthy';
+  if (
+    runningCount === containers.length &&
+    healthyCount === containers.length
+  ) {
+    return "healthy";
   }
 
-  return 'degraded';
+  return "degraded";
 }
 
 /**
@@ -155,20 +192,20 @@ function extractVersionFromTags(imageTags: string[]): string | null {
 
   // Extract tag portions (after the colon)
   const tags = imageTags
-    .map(t => t.split(':')[1])
+    .map((t) => t.split(":")[1])
     .filter(Boolean)
-    .filter(t => t !== 'latest');
+    .filter((t) => t !== "latest");
 
   if (tags.length === 0) return null;
 
   // Score each tag by specificity (more version segments = more specific)
-  const scoredTags = tags.map(tag => {
+  const scoredTags = tags.map((tag) => {
     // Extract version number pattern, ignoring any suffix
     const versionMatch = tag.match(/^v?(\d+(?:\.\d+)*)/);
     if (!versionMatch) return { score: 0, version: null };
 
     const version = versionMatch[1];
-    const segments = version.split('.').length;
+    const segments = version.split(".").length;
 
     return { score: segments, version };
   });
@@ -177,26 +214,26 @@ function extractVersionFromTags(imageTags: string[]): string | null {
   scoredTags.sort((a, b) => b.score - a.score);
 
   // Return the most specific version
-  const best = scoredTags.find(t => t.version);
+  const best = scoredTags.find((t) => t.version);
   return best?.version || null;
 }
 
 export async function POST(request: NextRequest) {
   try {
     // Verify JWT token
-    const token = extractBearerToken(request.headers.get('authorization'));
+    const token = extractBearerToken(request.headers.get("authorization"));
     if (!token) {
       return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Missing authorization token' },
-        { status: 401 }
+        { success: false, error: "Missing authorization token" },
+        { status: 401 },
       );
     }
 
     const payload = await verifyAgentToken(token);
     if (!payload) {
       return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Invalid or expired token' },
-        { status: 401 }
+        { success: false, error: "Invalid or expired token" },
+        { status: 401 },
       );
     }
 
@@ -208,20 +245,28 @@ export async function POST(request: NextRequest) {
 
     if (!containers || !Array.isArray(containers)) {
       return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Missing containers array' },
-        { status: 400 }
+        { success: false, error: "Missing containers array" },
+        { status: 400 },
       );
     }
 
-    console.log(`[Agent Containers] Receiving ${containers.length} container(s) from ${serverName}`);
+    console.log(
+      `[Agent Containers] Receiving ${containers.length} container(s) from ${serverName}`,
+    );
 
     // Fetch existing containers with startedAt for restart detection
     const existingContainers = await prisma.container.findMany({
       where: { serverId },
-      select: { id: true, containerId: true, name: true, status: true, startedAt: true },
+      select: {
+        id: true,
+        containerId: true,
+        name: true,
+        status: true,
+        startedAt: true,
+      },
     });
     const existingContainerMap = new Map(
-      existingContainers.map(c => [c.containerId, c])
+      existingContainers.map((c) => [c.containerId, c]),
     );
 
     // Group containers into services
@@ -246,7 +291,9 @@ export async function POST(request: NextRequest) {
 
       // Extract version from the first container's image tags
       const primaryContainer = serviceGroup.containers[0];
-      const version = primaryContainer ? extractVersionFromTags(primaryContainer.imageTags) : null;
+      const version = primaryContainer
+        ? extractVersionFromTags(primaryContainer.imageTags)
+        : null;
 
       const serviceData = {
         name: serviceGroup.name,
@@ -285,20 +332,24 @@ export async function POST(request: NextRequest) {
 
         // Restart detection: container was running and has a new startedAt
         if (existing && existing.startedAt && container.startedAt) {
-          const wasRunning = existing.status === 'running';
-          const hasNewStartTime = existing.startedAt.toISOString() !== container.startedAt;
+          const wasRunning = existing.status === "running";
+
+          const existingStartedAt = new Date(existing.startedAt);
+          const containerStartedAt = new Date(container.startedAt);
+          const hasNewStartTime =
+            existingStartedAt.getTime() !== containerStartedAt.getTime();
 
           if (wasRunning && hasNewStartTime) {
             await createActivity({
-              type: 'warning',
-              entityType: 'container',
-              eventType: 'restart',
+              type: "warning",
+              entityType: "container",
+              eventType: "restart",
               message: `Container ${container.name} restarted`,
               serverId,
               containerId: existing.id,
               metadata: {
-                previousStartedAt: existing.startedAt.toISOString(),
-                newStartedAt: container.startedAt,
+                previousStartedAt: existingStartedAt.toISOString(),
+                newStartedAt: containerStartedAt.toISOString(),
               },
             });
             restartCount++;
@@ -323,7 +374,9 @@ export async function POST(request: NextRequest) {
             labels: container.labels,
             networks: container.networks,
             serviceId: service.id,
-            startedAt: container.startedAt ? new Date(container.startedAt) : null,
+            startedAt: container.startedAt
+              ? new Date(container.startedAt)
+              : null,
           },
           create: {
             serverId,
@@ -338,7 +391,9 @@ export async function POST(request: NextRequest) {
             labels: container.labels,
             networks: container.networks,
             serviceId: service.id,
-            startedAt: container.startedAt ? new Date(container.startedAt) : null,
+            startedAt: container.startedAt
+              ? new Date(container.startedAt)
+              : null,
           },
         });
       }
@@ -357,7 +412,9 @@ export async function POST(request: NextRequest) {
     for (const serviceGroup of serviceGroups) {
       if (!serviceGroup.composeService) continue;
 
-      const serviceId = serviceByComposeService.get(serviceGroup.composeService);
+      const serviceId = serviceByComposeService.get(
+        serviceGroup.composeService,
+      );
       if (!serviceId) continue;
 
       // Process required dependencies
@@ -368,9 +425,9 @@ export async function POST(request: NextRequest) {
             data: {
               serviceId,
               dependsOnId: depServiceId,
-              dependencyType: 'requires',
-              inferred: !serviceGroup.containers.some(
-                c => c.labels[NEON_DEPENDS_ON_LABEL]?.includes(depName)
+              dependencyType: "requires",
+              inferred: !serviceGroup.containers.some((c) =>
+                c.labels[NEON_DEPENDS_ON_LABEL]?.includes(depName),
               ),
             },
           });
@@ -386,7 +443,7 @@ export async function POST(request: NextRequest) {
             data: {
               serviceId,
               dependsOnId: depServiceId,
-              dependencyType: 'optional',
+              dependencyType: "optional",
               inferred: false,
             },
           });
@@ -401,7 +458,8 @@ export async function POST(request: NextRequest) {
       where: {
         serverId,
         containerId: {
-          notIn: currentContainerIds.length > 0 ? currentContainerIds : ['__none__'],
+          notIn:
+            currentContainerIds.length > 0 ? currentContainerIds : ["__none__"],
         },
       },
     });
@@ -418,18 +476,18 @@ export async function POST(request: NextRequest) {
 
     console.log(
       `[Agent Containers] Synced ${containers.length} container(s) in ${serviceGroups.length} service(s) ` +
-      `with ${dependencyCount} dependencies, ${restartCount} restart(s) detected, deleted ${deleteContainersResult.count} container(s) ` +
-      `and ${deleteServicesResult.count} service(s) for ${serverName}`
+        `with ${dependencyCount} dependencies, ${restartCount} restart(s) detected, deleted ${deleteContainersResult.count} container(s) ` +
+        `and ${deleteServicesResult.count} service(s) for ${serverName}`,
     );
 
     return NextResponse.json<ApiResponse>({
       success: true,
     });
   } catch (error) {
-    console.error('[Agent Containers] Error:', error);
+    console.error("[Agent Containers] Error:", error);
     return NextResponse.json<ApiResponse>(
-      { success: false, error: 'Failed to sync containers' },
-      { status: 500 }
+      { success: false, error: "Failed to sync containers" },
+      { status: 500 },
     );
   }
 }

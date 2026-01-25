@@ -8,6 +8,7 @@ import {
   Container,
   Package,
   Activity,
+  HardDrive,
   Settings
 } from 'lucide-react';
 
@@ -17,6 +18,7 @@ const navigation = [
   { name: 'Containers', href: '/containers', icon: Container },
   { name: 'Applications', href: '/applications', icon: Package },
   { name: 'Metrics', href: '/metrics', icon: Activity },
+  { name: 'Backups', href: '/backups', icon: HardDrive },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

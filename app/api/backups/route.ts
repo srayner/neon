@@ -55,9 +55,12 @@ export async function GET(request: NextRequest) {
     // Read directory contents
     const entries = await fs.readdir(absolutePath, { withFileTypes: true });
 
+    // Filter out hidden files/folders (starting with .)
+    const visibleEntries = entries.filter(entry => !entry.name.startsWith('.'));
+
     // Build file items
     const items = await Promise.all(
-      entries.map(async (entry) => {
+      visibleEntries.map(async (entry) => {
         const entryPath = path.join(absolutePath, entry.name);
         let stats;
         try {

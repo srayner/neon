@@ -32,16 +32,6 @@ function formatPorts(ports: Docker.Port[]): string {
   );
 }
 
-function getHealthStatus(container: Docker.ContainerInfo): ContainerHealth {
-  const state = container.State;
-
-  if (state.includes("(healthy)")) return "healthy";
-  if (state.includes("(unhealthy)")) return "unhealthy";
-  if (state.includes("(health: starting)")) return "starting";
-
-  return null;
-}
-
 /**
  * Get image tags for a given image ID
  */
@@ -58,6 +48,7 @@ async function getImageTags(imageId: string): Promise<string[]> {
 interface ContainerStateInfo {
   startedAt: string | null;
   exitCode: number | null;
+  health: ContainerHealth;
 }
 
 /**
@@ -72,9 +63,17 @@ async function getContainerStateInfo(containerId: string): Promise<ContainerStat
       startedAt = null;
     }
     const exitCode = details.State.ExitCode ?? null;
-    return { startedAt, exitCode };
+
+    // Extract health from inspect data (only available via inspect, not listContainers)
+    const healthStatus = details.State.Health?.Status;
+    let health: ContainerHealth = null;
+    if (healthStatus === "healthy") health = "healthy";
+    else if (healthStatus === "unhealthy") health = "unhealthy";
+    else if (healthStatus === "starting") health = "starting";
+
+    return { startedAt, exitCode, health };
   } catch {
-    return { startedAt: null, exitCode: null };
+    return { startedAt: null, exitCode: null, health: null };
   }
 }
 
@@ -108,7 +107,7 @@ export async function collectContainers(): Promise<ContainerInfo[]> {
           imageId: container.ImageID || null,
           imageTags: imageTagsMap.get(container.ImageID) || [],
           status: mapDockerStatus(container.State),
-          health: getHealthStatus(container),
+          health: stateInfo.health,
           ports: formatPorts(container.Ports),
           labels: container.Labels || {},
           networks: Object.keys(container.NetworkSettings?.Networks || {}),

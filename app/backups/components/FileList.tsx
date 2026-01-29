@@ -1,16 +1,22 @@
-'use client';
+"use client";
 
-import { FileItem } from '../types';
-import { FileRow } from './FileRow';
-import { FolderOpen } from 'lucide-react';
+import { FileItem } from "../types";
+import { FileRow } from "./FileRow";
+import { FolderOpen } from "lucide-react";
 
 interface FileListProps {
   items: FileItem[];
   currentPath: string;
   onNavigate: (path: string) => void;
+  onDelete: (path: string) => void;
 }
 
-export function FileList({ items, currentPath, onNavigate }: FileListProps) {
+export function FileList({
+  items,
+  currentPath,
+  onNavigate,
+  onDelete,
+}: FileListProps) {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 py-16">
@@ -38,7 +44,7 @@ export function FileList({ items, currentPath, onNavigate }: FileListProps) {
               <th className="w-44 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
                 Modified
               </th>
-              <th className="w-28 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
+              <th className="w-36 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
                 Actions
               </th>
             </tr>
@@ -50,6 +56,7 @@ export function FileList({ items, currentPath, onNavigate }: FileListProps) {
                 item={item}
                 currentPath={currentPath}
                 onNavigate={onNavigate}
+                onDelete={onDelete}
               />
             ))}
           </tbody>

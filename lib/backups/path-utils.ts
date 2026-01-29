@@ -1,5 +1,5 @@
-import path from 'path';
-import fs from 'fs/promises';
+import path from "path";
+import fs from "fs/promises";
 
 /**
  * Get the backup root directory from environment variable
@@ -7,9 +7,16 @@ import fs from 'fs/promises';
 export function getBackupRoot(): string {
   const backupRoot = process.env.BACKUP_ROOT;
   if (!backupRoot) {
-    throw new Error('BACKUP_ROOT environment variable is not configured');
+    throw new Error("BACKUP_ROOT environment variable is not configured");
   }
   return backupRoot;
+}
+
+/**
+ * Get the normalized (absolute) backup root path
+ */
+export function getNormalizedBackupRoot(): string {
+  return path.resolve(getBackupRoot());
 }
 
 /**
@@ -25,8 +32,8 @@ export function validateAndResolvePath(relativePath: string): string {
   const backupRoot = getBackupRoot();
 
   // Reject null byte injection attempts
-  if (relativePath.includes('\0')) {
-    throw new Error('Invalid path: contains null bytes');
+  if (relativePath.includes("\0")) {
+    throw new Error("Invalid path: contains null bytes");
   }
 
   // Decode URI components safely
@@ -34,7 +41,7 @@ export function validateAndResolvePath(relativePath: string): string {
   try {
     decodedPath = decodeURIComponent(relativePath);
   } catch {
-    throw new Error('Invalid path: malformed URI encoding');
+    throw new Error("Invalid path: malformed URI encoding");
   }
 
   // Normalize and resolve the path
@@ -42,8 +49,11 @@ export function validateAndResolvePath(relativePath: string): string {
   const resolvedPath = path.resolve(normalizedBackupRoot, decodedPath);
 
   // Verify the resolved path is within BACKUP_ROOT
-  if (!resolvedPath.startsWith(normalizedBackupRoot + path.sep) && resolvedPath !== normalizedBackupRoot) {
-    throw new Error('Invalid path: access denied');
+  if (
+    !resolvedPath.startsWith(normalizedBackupRoot + path.sep) &&
+    resolvedPath !== normalizedBackupRoot
+  ) {
+    throw new Error("Invalid path: access denied");
   }
 
   return resolvedPath;
@@ -52,7 +62,9 @@ export function validateAndResolvePath(relativePath: string): string {
 /**
  * Checks if a path exists and returns its stats
  */
-export async function pathExists(absolutePath: string): Promise<{ exists: boolean; isDirectory: boolean; isFile: boolean }> {
+export async function pathExists(
+  absolutePath: string,
+): Promise<{ exists: boolean; isDirectory: boolean; isFile: boolean }> {
   try {
     const stats = await fs.stat(absolutePath);
     return {
@@ -75,18 +87,18 @@ export async function pathExists(absolutePath: string): Promise<{ exists: boolea
 export function getRelativePath(absolutePath: string): string {
   const backupRoot = path.resolve(getBackupRoot());
   const relative = path.relative(backupRoot, absolutePath);
-  return relative || '.';
+  return relative || ".";
 }
 
 /**
  * Gets the parent path, returns null if at root
  */
 export function getParentPath(relativePath: string): string | null {
-  if (!relativePath || relativePath === '.' || relativePath === '/') {
+  if (!relativePath || relativePath === "." || relativePath === "/") {
     return null;
   }
   const parent = path.dirname(relativePath);
-  if (parent === '.' || parent === relativePath) {
+  if (parent === "." || parent === relativePath) {
     return null;
   }
   return parent;

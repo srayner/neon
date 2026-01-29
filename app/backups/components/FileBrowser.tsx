@@ -1,34 +1,36 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { DirectoryListing } from '../types';
-import { Breadcrumbs } from './Breadcrumbs';
-import { FileList } from './FileList';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback } from "react";
+import { DirectoryListing } from "../types";
+import { Breadcrumbs } from "./Breadcrumbs";
+import { FileList } from "./FileList";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 
 export function FileBrowser() {
   const [listing, setListing] = useState<DirectoryListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPath, setCurrentPath] = useState('');
+  const [currentPath, setCurrentPath] = useState("");
 
   const fetchDirectory = useCallback(async (path: string) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/backups?path=${encodeURIComponent(path)}`);
+      const response = await fetch(
+        `/api/backups?path=${encodeURIComponent(path)}`,
+      );
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to load directory');
+        throw new Error(data.error || "Failed to load directory");
       }
 
       const data: DirectoryListing = await response.json();
       setListing(data);
       setCurrentPath(data.path);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
       setListing(null);
     } finally {
       setLoading(false);
@@ -46,6 +48,26 @@ export function FileBrowser() {
 
   const handleRefresh = () => {
     fetchDirectory(currentPath);
+  };
+
+  const handleDelete = async (path: string) => {
+    try {
+      const response = await fetch(
+        `/api/backups?path=${encodeURIComponent(path)}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete");
+      }
+
+      fetchDirectory(currentPath);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete");
+    }
   };
 
   if (loading && !listing) {
@@ -81,7 +103,7 @@ export function FileBrowser() {
           disabled={loading}
           className="flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700 disabled:opacity-50"
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
       </div>
@@ -98,6 +120,7 @@ export function FileBrowser() {
           items={listing.items}
           currentPath={currentPath}
           onNavigate={handleNavigate}
+          onDelete={handleDelete}
         />
       )}
     </div>

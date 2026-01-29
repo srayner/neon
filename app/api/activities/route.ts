@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(activities.map(a => ({
     id: a.id,
     type: a.type,
+    eventType: a.eventType,
     message: a.message,
     time: formatRelativeTime(a.createdAt),
     createdAt: a.createdAt.toISOString(),

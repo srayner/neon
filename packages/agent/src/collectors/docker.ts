@@ -55,20 +55,26 @@ async function getImageTags(imageId: string): Promise<string[]> {
   }
 }
 
+interface ContainerStateInfo {
+  startedAt: string | null;
+  exitCode: number | null;
+}
+
 /**
- * Get container startedAt timestamp via inspect
+ * Get container state details via inspect (startedAt, exitCode)
  */
-async function getContainerStartedAt(containerId: string): Promise<string | null> {
+async function getContainerStateInfo(containerId: string): Promise<ContainerStateInfo> {
   try {
     const details = await docker.getContainer(containerId).inspect();
-    const startedAt = details.State.StartedAt || null;
+    let startedAt = details.State.StartedAt || null;
     // Docker returns "0001-01-01T00:00:00Z" for never-started containers
     if (startedAt?.startsWith("0001-01-01")) {
-      return null;
+      startedAt = null;
     }
-    return startedAt;
+    const exitCode = details.State.ExitCode ?? null;
+    return { startedAt, exitCode };
   } catch {
-    return null;
+    return { startedAt: null, exitCode: null };
   }
 }
 
@@ -90,10 +96,10 @@ export async function collectContainers(): Promise<ContainerInfo[]> {
       })
     );
 
-    // Get detailed info for each container (for startedAt)
+    // Get detailed info for each container (for startedAt, exitCode)
     return Promise.all(
       containers.map(async (container) => {
-        const startedAt = await getContainerStartedAt(container.Id);
+        const stateInfo = await getContainerStateInfo(container.Id);
 
         return {
           containerId: container.Id.substring(0, 12),
@@ -106,7 +112,8 @@ export async function collectContainers(): Promise<ContainerInfo[]> {
           ports: formatPorts(container.Ports),
           labels: container.Labels || {},
           networks: Object.keys(container.NetworkSettings?.Networks || {}),
-          startedAt,
+          startedAt: stateInfo.startedAt,
+          exitCode: stateInfo.exitCode,
         };
       })
     );

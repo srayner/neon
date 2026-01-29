@@ -55,4 +55,5 @@ export interface ContainerInfo {
   labels: Record<string, string>;
   networks: string[];
   startedAt: string | null; // ISO 8601 timestamp
+  exitCode: number | null; // Exit code when status is "exited"
 }

@@ -62,6 +62,9 @@ enum EntityType {
 
 enum EventType {
   restart
+  manual_restart
+  stopped
+  crashed
   status_change
   version_change
   health_change
@@ -151,6 +154,7 @@ model Container {
   imageTags    String[]        @default([]) @map("image_tags")
   status       ContainerStatus
   health       String?
+  exitCode     Int?            @map("exit_code")
   ports        String
   labels       Json            @default("{}")
   networks     String[]        @default([])

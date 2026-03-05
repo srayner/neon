@@ -57,3 +57,46 @@ export interface ContainerInfo {
   startedAt: string | null; // ISO 8601 timestamp
   exitCode: number | null; // Exit code when status is "exited"
 }
+
+/**
+ * Docker container event actions
+ */
+export type ContainerEventAction =
+  | "create"
+  | "start"
+  | "stop"
+  | "die"
+  | "kill"
+  | "restart"
+  | "pause"
+  | "unpause"
+  | "destroy"
+  | "health_status";
+
+/**
+ * Severity levels for container events
+ */
+export type ContainerEventSeverity = "info" | "warning" | "error" | "critical";
+
+/**
+ * Raw container event from Docker events stream
+ */
+export interface ContainerEvent {
+  containerId: string;
+  containerName: string;
+  image: string;
+  action: ContainerEventAction;
+  timestamp: string; // ISO 8601 - actual Docker event time
+  exitCode: number | null;
+  signal: string | null;
+  healthStatus: ContainerHealth | null;
+}
+
+/**
+ * Processed container event with severity and crash loop detection
+ */
+export interface ProcessedContainerEvent extends ContainerEvent {
+  severity: ContainerEventSeverity;
+  restartCount: number; // restarts within time window (for crash loop detection)
+  isCrashLoop: boolean;
+}

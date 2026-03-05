@@ -2,10 +2,12 @@ import type {
   ServerInfo,
   ServerMetrics,
   ContainerInfo,
+  ProcessedContainerEvent,
   AgentRegistrationRequest,
   AgentRegistrationResponse,
   MetricsReportRequest,
   ContainersReportRequest,
+  ContainerEventsReportRequest,
   ApiResponse,
   AgentHeartbeatResponse,
 } from '@neon/shared';
@@ -111,6 +113,34 @@ export class MasterClient {
 
     if (!result.success) {
       throw new Error(`Failed to send containers: ${result.error || 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Send container events to master
+   */
+  async sendContainerEvents(events: ProcessedContainerEvent[]): Promise<void> {
+    if (!this.token) {
+      throw new Error('Not registered - call register() first');
+    }
+
+    const url = `${this.config.masterUrl}/api/agent/container-events`;
+
+    const body: ContainerEventsReportRequest = { events };
+
+    const response = await this.fetchWithRetry(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const result: ApiResponse = await response.json();
+
+    if (!result.success) {
+      throw new Error(`Failed to send container events: ${result.error || 'Unknown error'}`);
     }
   }
 

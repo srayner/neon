@@ -9,4 +9,8 @@ export interface Container {
   status: ContainerStatus;
   health: ContainerHealth;
   ports: string;
+  exitCode: number | null;
+  startedAt: string | null;
+  labels: Record<string, string>;
+  networks: string[];
 }

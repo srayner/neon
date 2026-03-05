@@ -72,6 +72,10 @@ enum EventType {
   removed
   online
   offline
+  paused
+  unpaused
+  killed
+  crash_loop
 }
 
 model Server {
@@ -139,7 +143,7 @@ model ServerMetric {
   // Relations
   server            Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
-  @@index([serverId, timestamp(sort: Desc)])
+  @@index([serverId, timestamp])
   @@map("server_metric")
 }
 

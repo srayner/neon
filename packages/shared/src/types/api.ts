@@ -1,4 +1,4 @@
-import type { ServerInfo, ServerMetrics, ContainerInfo } from './metrics.js';
+import type { ServerInfo, ServerMetrics, ContainerInfo, ProcessedContainerEvent } from './metrics.js';
 
 /**
  * Agent registration request - sent when agent starts
@@ -45,6 +45,13 @@ export interface AgentHeartbeatRequest {
 export interface AgentHeartbeatResponse {
   serverTime: string;
   tokenExpiresIn: number; // seconds until token expires
+}
+
+/**
+ * Container events report request - sent periodically with buffered events
+ */
+export interface ContainerEventsReportRequest {
+  events: ProcessedContainerEvent[];
 }
 
 /**

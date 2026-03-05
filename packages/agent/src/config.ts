@@ -16,6 +16,10 @@ export interface AgentConfig {
   bufferEnabled: boolean;
   bufferMaxSize: number;
 
+  // Container events
+  containerEventsEnabled: boolean;
+  containerEventsBufferMaxSize: number;
+
   // Retry
   retryAttempts: number;
   retryDelayMs: number;
@@ -66,6 +70,10 @@ export function loadConfig(): AgentConfig {
     bufferEnabled: optionalEnvBool('BUFFER_ENABLED', true),
     bufferMaxSize: optionalEnvInt('BUFFER_MAX_SIZE', 100),
 
+    // Container events
+    containerEventsEnabled: optionalEnvBool('CONTAINER_EVENTS_ENABLED', true),
+    containerEventsBufferMaxSize: optionalEnvInt('CONTAINER_EVENTS_BUFFER_SIZE', 500),
+
     // Retry
     retryAttempts: optionalEnvInt('RETRY_ATTEMPTS', 3),
     retryDelayMs: optionalEnvInt('RETRY_DELAY_MS', 1000),
@@ -81,4 +89,6 @@ export function printConfig(config: AgentConfig): void {
   console.log(`  Heartbeat Interval: ${config.heartbeatIntervalSeconds}s`);
   console.log(`  Buffer Enabled: ${config.bufferEnabled}`);
   console.log(`  Buffer Max Size: ${config.bufferMaxSize}`);
+  console.log(`  Container Events Enabled: ${config.containerEventsEnabled}`);
+  console.log(`  Container Events Buffer Size: ${config.containerEventsBufferMaxSize}`);
 }

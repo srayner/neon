@@ -1,9 +1,10 @@
 import cron from 'node-cron';
 import type { AgentConfig } from './config.js';
 import { MasterClient } from './transport/client.js';
-import { MetricsBuffer } from './transport/buffer.js';
+import { MetricsBuffer, ContainerEventsBuffer } from './transport/buffer.js';
 import { collectMetrics, getServerInfo } from './collectors/metrics.js';
 import { collectContainers, isDockerAvailable } from './collectors/docker.js';
+import { DockerEventMonitor } from './collectors/docker-events.js';
 
 /**
  * Scheduler manages periodic collection and reporting tasks
@@ -12,6 +13,8 @@ export class Scheduler {
   private config: AgentConfig;
   private client: MasterClient;
   private buffer: MetricsBuffer;
+  private eventsBuffer: ContainerEventsBuffer;
+  private eventMonitor: DockerEventMonitor | null = null;
   private tasks: cron.ScheduledTask[] = [];
   private dockerAvailable: boolean = false;
 
@@ -19,6 +22,7 @@ export class Scheduler {
     this.config = config;
     this.client = client;
     this.buffer = new MetricsBuffer(config.bufferMaxSize);
+    this.eventsBuffer = new ContainerEventsBuffer(config.containerEventsBufferMaxSize);
   }
 
   /**
@@ -40,6 +44,11 @@ export class Scheduler {
     await this.collectAndSendMetrics();
     if (this.dockerAvailable) {
       await this.collectAndSendContainers();
+
+      // Start Docker event monitoring if enabled
+      if (this.config.containerEventsEnabled) {
+        await this.startEventMonitor();
+      }
     }
 
     // Schedule periodic tasks
@@ -54,10 +63,18 @@ export class Scheduler {
    * Stop all scheduled tasks
    */
   stop(): void {
+    // Stop cron tasks
     for (const task of this.tasks) {
       task.stop();
     }
     this.tasks = [];
+
+    // Stop event monitor
+    if (this.eventMonitor) {
+      this.eventMonitor.stop();
+      this.eventMonitor = null;
+    }
+
     console.log('[Scheduler] All tasks stopped');
   }
 
@@ -154,12 +171,51 @@ export class Scheduler {
       if (await this.ensureRegistered()) {
         try {
           await this.client.sendContainers(containers);
+
+          // Also flush container events alongside container sync
+          await this.flushContainerEvents();
         } catch (error) {
           console.warn('[Scheduler] Failed to send containers:', (error as Error).message);
         }
       }
     } catch (error) {
       console.error('[Scheduler] Error collecting containers:', (error as Error).message);
+    }
+  }
+
+  /**
+   * Start Docker event monitor
+   */
+  private async startEventMonitor(): Promise<void> {
+    try {
+      this.eventMonitor = new DockerEventMonitor((event) => {
+        this.eventsBuffer.add(event);
+        console.log(`[Scheduler] Buffered container event: ${event.action} for ${event.containerName} (severity: ${event.severity})`);
+      });
+
+      await this.eventMonitor.start();
+    } catch (error) {
+      console.error('[Scheduler] Failed to start Docker event monitor:', (error as Error).message);
+      this.eventMonitor = null;
+    }
+  }
+
+  /**
+   * Flush buffered container events to master
+   */
+  private async flushContainerEvents(): Promise<void> {
+    if (!this.eventsBuffer.hasData()) {
+      return;
+    }
+
+    try {
+      const events = this.eventsBuffer.flush();
+      console.log(`[Scheduler] Flushing ${events.length} container event(s)`);
+
+      await this.client.sendContainerEvents(events);
+    } catch (error) {
+      console.warn('[Scheduler] Failed to send container events:', (error as Error).message);
+      // Note: Events are lost if send fails - this is acceptable per design
     }
   }
 

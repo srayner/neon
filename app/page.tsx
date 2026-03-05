@@ -37,8 +37,15 @@ async function getServers(): Promise<ServerData[]> {
 interface ActivityData {
   id: number;
   type: 'warning' | 'critical' | 'success' | 'info';
+  eventType: string;
   message: string;
   time: string;
+  metadata?: {
+    exitCode?: number;
+    signal?: string;
+    restartCount?: number;
+    isCrashLoop?: boolean;
+  };
 }
 
 async function getRecentActivities(): Promise<ActivityData[]> {
@@ -61,6 +68,48 @@ const activityColors = {
   success: 'border-l-emerald-400 bg-emerald-500/5',
   info: 'border-l-cyan-400 bg-cyan-500/5',
 };
+
+const eventTypeLabels: Record<string, string> = {
+  restart: 'Restart',
+  manual_restart: 'Started',
+  stopped: 'Stopped',
+  crashed: 'Crashed',
+  status_change: 'Status Change',
+  version_change: 'Version Change',
+  health_change: 'Health',
+  created: 'Created',
+  removed: 'Removed',
+  online: 'Online',
+  offline: 'Offline',
+  paused: 'Paused',
+  unpaused: 'Unpaused',
+  killed: 'Killed',
+  crash_loop: 'Crash Loop',
+};
+
+function getEventTypeColor(eventType: string): string {
+  switch (eventType) {
+    case 'crash_loop':
+    case 'crashed':
+      return 'bg-red-500/20 text-red-400';
+    case 'killed':
+    case 'restart':
+      return 'bg-amber-500/20 text-amber-400';
+    case 'stopped':
+    case 'paused':
+    case 'removed':
+      return 'bg-zinc-500/20 text-zinc-400';
+    case 'created':
+    case 'manual_restart':
+    case 'unpaused':
+    case 'online':
+      return 'bg-emerald-500/20 text-emerald-400';
+    case 'health_change':
+      return 'bg-purple-500/20 text-purple-400';
+    default:
+      return 'bg-cyan-500/20 text-cyan-400';
+  }
+}
 
 export default async function Dashboard() {
   const [stats, servers, activities] = await Promise.all([
@@ -152,9 +201,34 @@ export default async function Dashboard() {
                 activities.map((activity) => (
                   <div
                     key={activity.id}
-                    className={`border-l-2 pl-3 py-2 ${activityColors[activity.type]}`}
+                    className={`border-l-2 pl-3 py-2 ${activityColors[activity.type]} ${activity.type === 'critical' ? 'relative' : ''}`}
                   >
-                    <p className="text-sm text-zinc-200">{activity.message}</p>
+                    {/* Pulsing indicator for critical events */}
+                    {activity.type === 'critical' && (
+                      <span className="absolute -left-1 top-3 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    )}
+                    <div className="flex items-start gap-2">
+                      <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${getEventTypeColor(activity.eventType)}`}>
+                        {eventTypeLabels[activity.eventType] || activity.eventType}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-zinc-200">{activity.message}</p>
+                    {/* Show metadata details */}
+                    {activity.metadata && (activity.metadata.exitCode !== undefined || activity.metadata.restartCount) && (
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {activity.metadata.exitCode !== undefined && activity.metadata.exitCode !== 0 && (
+                          <span className="inline-flex items-center text-[10px] text-red-400">
+                            Exit: {activity.metadata.exitCode}
+                            {activity.metadata.signal && ` (${activity.metadata.signal})`}
+                          </span>
+                        )}
+                        {activity.metadata.restartCount && activity.metadata.restartCount > 1 && (
+                          <span className="inline-flex items-center text-[10px] text-amber-400">
+                            {activity.metadata.restartCount} restarts
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <p className="mt-1 text-xs text-zinc-500">{activity.time}</p>
                   </div>
                 ))

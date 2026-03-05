@@ -30,5 +30,6 @@ export async function GET(request: NextRequest) {
     message: a.message,
     time: formatRelativeTime(a.createdAt),
     createdAt: a.createdAt.toISOString(),
+    metadata: a.metadata,
   })));
 }

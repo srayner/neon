@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAgentToken, extractBearerToken } from "@/lib/auth/jwt";
-import { createActivity } from "@/lib/activity";
 import type {
   ContainersReportRequest,
   ApiResponse,
@@ -254,29 +253,12 @@ export async function POST(request: NextRequest) {
       `[Agent Containers] Receiving ${containers.length} container(s) from ${serverName}`,
     );
 
-    // Fetch existing containers for restart/stop detection
-    const existingContainers = await prisma.container.findMany({
-      where: { serverId },
-      select: {
-        id: true,
-        containerId: true,
-        name: true,
-        status: true,
-        startedAt: true,
-        exitCode: true,
-      },
-    });
-    const existingContainerMap = new Map(
-      existingContainers.map((c) => [c.containerId, c]),
-    );
-
     // Group containers into services
     const serviceGroups = groupContainersIntoServices(containers);
 
     // Track service IDs for cleanup and dependency resolution
     const activeServiceIds: number[] = [];
     const serviceByComposeService = new Map<string, number>(); // composeService -> serviceId
-    let restartCount = 0;
 
     // Upsert services and containers
     for (const serviceGroup of serviceGroups) {
@@ -329,87 +311,6 @@ export async function POST(request: NextRequest) {
 
       // Upsert containers for this service
       for (const container of serviceGroup.containers) {
-        const existing = existingContainerMap.get(container.containerId);
-
-        // Container state change detection
-        if (existing) {
-          const wasRunning = existing.status === "running";
-          const wasExited = existing.status === "exited";
-          const isNowRunning = container.status === "running";
-          const isNowExited = container.status === "exited";
-
-          // Detect stop/crash: running → exited
-          if (wasRunning && isNowExited) {
-            const exitCode = container.exitCode;
-            if (exitCode === 0) {
-              // Graceful stop (exit code 0)
-              await createActivity({
-                type: "info",
-                entityType: "container",
-                eventType: "stopped",
-                message: `Container ${container.name} stopped`,
-                serverId,
-                containerId: existing.id,
-                metadata: { exitCode },
-              });
-            } else {
-              // Crash (non-zero exit code)
-              await createActivity({
-                type: "warning",
-                entityType: "container",
-                eventType: "crashed",
-                message: `Container ${container.name} crashed with exit code ${exitCode}`,
-                serverId,
-                containerId: existing.id,
-                metadata: { exitCode },
-              });
-            }
-            restartCount++;
-          }
-
-          // Detect restarts: start time changed while running or starting from exited
-          if (existing.startedAt && container.startedAt) {
-            const existingStartedAt = new Date(existing.startedAt);
-            const containerStartedAt = new Date(container.startedAt);
-            const hasNewStartTime =
-              existingStartedAt.getTime() !== containerStartedAt.getTime();
-
-            if (hasNewStartTime) {
-              if (wasRunning && isNowRunning) {
-                // Auto-restart: container was running and restarted (crash/policy)
-                await createActivity({
-                  type: "warning",
-                  entityType: "container",
-                  eventType: "restart",
-                  message: `Container ${container.name} restarted`,
-                  serverId,
-                  containerId: existing.id,
-                  metadata: {
-                    previousStartedAt: existingStartedAt.toISOString(),
-                    newStartedAt: containerStartedAt.toISOString(),
-                  },
-                });
-                restartCount++;
-              } else if (wasExited && isNowRunning) {
-                // Manual restart: container was stopped, now started again
-                await createActivity({
-                  type: "info",
-                  entityType: "container",
-                  eventType: "manual_restart",
-                  message: `Container ${container.name} was started`,
-                  serverId,
-                  containerId: existing.id,
-                  metadata: {
-                    previousStartedAt: existingStartedAt.toISOString(),
-                    newStartedAt: containerStartedAt.toISOString(),
-                  },
-                });
-                restartCount++;
-              }
-            }
-          }
-        }
-
         await prisma.container.upsert({
           where: {
             serverId_containerId: {
@@ -532,7 +433,7 @@ export async function POST(request: NextRequest) {
 
     console.log(
       `[Agent Containers] Synced ${containers.length} container(s) in ${serviceGroups.length} service(s) ` +
-        `with ${dependencyCount} dependencies, ${restartCount} restart(s) detected, deleted ${deleteContainersResult.count} container(s) ` +
+        `with ${dependencyCount} dependencies, deleted ${deleteContainersResult.count} container(s) ` +
         `and ${deleteServicesResult.count} service(s) for ${serverName}`,
     );
 

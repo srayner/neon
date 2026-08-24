@@ -16,6 +16,7 @@ import {
   Bot,
   Network,
   ArrowRight,
+  ListChecks,
 } from "lucide-react";
 
 interface ContainerData {
@@ -41,7 +42,8 @@ type ServiceType =
   | "database"
   | "website"
   | "agent"
-  | "infrastructure";
+  | "infrastructure"
+  | "task";
 
 interface ServiceDependency {
   id: number;
@@ -158,6 +160,9 @@ const serviceTypeConfig: Record<
     color: "text-pink-400",
     label: "Infrastructure",
   },
+  // Colour is overridden dynamically at render time based on whether the
+  // task's containers are running (green) or not (blue) — see below.
+  task: { icon: ListChecks, color: "text-blue-400", label: "Task" },
 };
 
 function MetricGauge({
@@ -545,10 +550,31 @@ export default async function ServerDetailPage({ params }: PageProps) {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {server.services.map((service) => {
-                const serviceStatus = serviceStatusConfig[service.status];
+                const isTask = service.serviceType === "task";
+                const isTaskRunning = isTask && service.status !== "down";
+                const serviceStatus = isTask
+                  ? isTaskRunning
+                    ? {
+                        dot: "bg-emerald-400",
+                        text: "text-emerald-400",
+                        bg: "bg-emerald-500/10",
+                        label: "Running",
+                      }
+                    : {
+                        dot: "bg-blue-400",
+                        text: "text-blue-400",
+                        bg: "bg-blue-500/10",
+                        label: "Idle",
+                      }
+                  : serviceStatusConfig[service.status];
                 const typeConfig = service.serviceType
                   ? serviceTypeConfig[service.serviceType]
                   : null;
+                const typeColor = isTask
+                  ? isTaskRunning
+                    ? "text-emerald-400"
+                    : "text-blue-400"
+                  : typeConfig?.color;
                 const TypeIcon = typeConfig?.icon || Package;
 
                 return (
@@ -560,7 +586,7 @@ export default async function ServerDetailPage({ params }: PageProps) {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3">
                         <div
-                          className={`rounded-lg bg-zinc-800 p-2 ${typeConfig?.color || "text-zinc-400"}`}
+                          className={`rounded-lg bg-zinc-800 p-2 ${typeColor || "text-zinc-400"}`}
                         >
                           <TypeIcon className="h-4 w-4" />
                         </div>

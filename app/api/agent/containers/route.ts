@@ -46,6 +46,7 @@ const VALID_SERVICE_TYPES: ServiceType[] = [
   "website",
   "agent",
   "infrastructure",
+  "task",
 ];
 
 function parseServiceType(value: string | undefined): ServiceType | null {

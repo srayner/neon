@@ -39,6 +39,7 @@ enum ServiceType {
   website
   agent
   infrastructure
+  task
 }
 
 enum DependencyType {

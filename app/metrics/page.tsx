@@ -44,13 +44,12 @@ export default async function MetricsPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const serverIdParam = params.serverId;
-  let serverId: number;
 
   if (!serverIdParam) {
     redirect(`/metrics?serverId=${servers[0].id}`);
   }
 
-  serverId = parseInt(serverIdParam, 10);
+  const serverId = parseInt(serverIdParam, 10);
 
   if (isNaN(serverId) || !servers.some((s) => s.id === serverId)) {
     redirect(`/metrics?serverId=${servers[0].id}`);

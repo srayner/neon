@@ -6,6 +6,17 @@ import { Breadcrumbs } from "./Breadcrumbs";
 import { FileList } from "./FileList";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 
+async function requestDirectory(path: string): Promise<DirectoryListing> {
+  const response = await fetch(`/api/backups?path=${encodeURIComponent(path)}`);
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || "Failed to load directory");
+  }
+
+  return response.json();
+}
+
 export function FileBrowser() {
   const [listing, setListing] = useState<DirectoryListing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -17,16 +28,7 @@ export function FileBrowser() {
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/backups?path=${encodeURIComponent(path)}`,
-      );
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to load directory");
-      }
-
-      const data: DirectoryListing = await response.json();
+      const data = await requestDirectory(path);
       setListing(data);
       setCurrentPath(data.path);
     } catch (err) {
@@ -38,7 +40,26 @@ export function FileBrowser() {
   }, []);
 
   useEffect(() => {
-    fetchDirectory(currentPath);
+    let cancelled = false;
+
+    requestDirectory("")
+      .then((data) => {
+        if (cancelled) return;
+        setListing(data);
+        setCurrentPath(data.path);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "An error occurred");
+        setListing(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleNavigate = (path: string) => {

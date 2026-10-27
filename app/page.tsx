@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Server, Container, Activity, AlertTriangle } from 'lucide-react';
 import { StatCard } from './components/StatCard';
 import { ServerStatusCard } from './components/ServerStatusCard';
@@ -127,7 +128,7 @@ export default async function Dashboard() {
             Dashboard
           </h1>
           <p className="text-zinc-400">
-            Welcome back! Here's what's happening with your infrastructure.
+            Welcome back! Here&apos;s what&apos;s happening with your infrastructure.
           </p>
         </div>
 
@@ -166,12 +167,12 @@ export default async function Dashboard() {
           <div className="lg:col-span-2">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-zinc-50">Server Status</h2>
-              <a
+              <Link
                 href="/servers"
                 className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
               >
                 View all →
-              </a>
+              </Link>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               {servers.map((server) => (

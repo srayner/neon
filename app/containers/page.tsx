@@ -58,13 +58,12 @@ export default async function ContainersPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const serverIdParam = params.serverId;
-  let serverId: number;
 
   if (!serverIdParam) {
     redirect(`/containers?serverId=${servers[0].id}`);
   }
 
-  serverId = parseInt(serverIdParam, 10);
+  const serverId = parseInt(serverIdParam, 10);
 
   if (isNaN(serverId) || !servers.some((s) => s.id === serverId)) {
     redirect(`/containers?serverId=${servers[0].id}`);

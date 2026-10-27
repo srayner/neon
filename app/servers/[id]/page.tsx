@@ -18,6 +18,7 @@ import {
   ArrowRight,
   ListChecks,
 } from "lucide-react";
+import { DeleteServerButton } from "./components/DeleteServerButton";
 
 interface ContainerData {
   id: number;
@@ -406,6 +407,7 @@ export default async function ServerDetailPage({ params }: PageProps) {
                 </div>
               </div>
             </div>
+            <DeleteServerButton serverId={server.id} serverName={server.name} />
           </div>
         </div>
 

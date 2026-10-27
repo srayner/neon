@@ -2,7 +2,7 @@
 # Multi-stage build for Next.js with standalone output
 
 # ---- Dependencies ----
-FROM node:20-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 
 # Copy package files
@@ -13,7 +13,7 @@ COPY packages/shared/package*.json ./packages/shared/
 RUN npm ci
 
 # ---- Builder ----
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 WORKDIR /app
 
 # Install OpenSSL for Prisma to detect correct version
@@ -44,7 +44,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ---- Production ----
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

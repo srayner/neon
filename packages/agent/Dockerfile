@@ -1,6 +1,8 @@
 # Minimal Dockerfile for bundled agent
 FROM node:26-alpine
 
+RUN apk upgrade --no-cache
+
 WORKDIR /app
 
 # Install only the native dependencies that can't be bundled

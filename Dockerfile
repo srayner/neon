@@ -51,7 +51,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install OpenSSL and glibc compatibility for Prisma
-RUN apk add --no-cache openssl libc6-compat
+RUN apk upgrade --no-cache && apk add --no-cache openssl libc6-compat
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \

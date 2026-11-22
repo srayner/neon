@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { listContainers } from '@/lib/data/containers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,16 +22,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const containers = await prisma.container.findMany({
-      where: {
-        serverId,
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
-
-    return NextResponse.json(containers);
+    return NextResponse.json(await listContainers(serverId));
   } catch (error) {
     console.error('Error fetching containers:', error);
     return NextResponse.json(

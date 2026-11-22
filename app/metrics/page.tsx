@@ -1,31 +1,14 @@
 import { redirect } from 'next/navigation';
+import { listServers } from '@/lib/data/servers';
 import { ServerMetricsSelector } from './components/ServerMetricsSelector';
 import { MetricsCharts } from './components/MetricsCharts';
-
-interface Server {
-  id: number;
-  name: string;
-}
-
-async function getServers(): Promise<Server[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/servers`, {
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch servers');
-  }
-
-  return res.json();
-}
 
 interface PageProps {
   searchParams: Promise<{ serverId?: string }>;
 }
 
 export default async function MetricsPage({ searchParams }: PageProps) {
-  const servers = await getServers();
+  const servers = await listServers();
 
   if (servers.length === 0) {
     return (

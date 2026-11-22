@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
-import { getNtfyPublicSettings } from "@/lib/alerts/ntfy";
+import { getSettings } from "@/lib/data/settings";
 
 export async function GET() {
-  return NextResponse.json({
-    backupRoot: process.env.BACKUP_ROOT || null,
-    ntfy: getNtfyPublicSettings(),
-  });
+  return NextResponse.json(await getSettings());
 }

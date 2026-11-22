@@ -1,45 +1,16 @@
 import { redirect } from 'next/navigation';
+import { listServers } from '@/lib/data/servers';
+import { listContainers } from '@/lib/data/containers';
 import { ContainersTable } from './components/ContainersTable';
 import { ServerSelector } from './components/ServerSelector';
-import { Container } from './types';
-
-interface Server {
-  id: number;
-  name: string;
-}
-
-async function getServers(): Promise<Server[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/servers`, {
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch servers');
-  }
-
-  return res.json();
-}
-
-async function getContainers(serverId: number): Promise<Container[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/containers?serverId=${serverId}`, {
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch containers');
-  }
-
-  return res.json();
-}
+import { Container, ContainerHealth } from './types';
 
 interface PageProps {
   searchParams: Promise<{ serverId?: string }>;
 }
 
 export default async function ContainersPage({ searchParams }: PageProps) {
-  const servers = await getServers();
+  const servers = await listServers();
 
   if (servers.length === 0) {
     return (
@@ -70,7 +41,21 @@ export default async function ContainersPage({ searchParams }: PageProps) {
   }
 
   const selectedServer = servers.find((s) => s.id === serverId)!;
-  const containers = await getContainers(serverId);
+  // Only the fields the table shows. The agent writes health and labels;
+  // the database types them as a plain string and JSON.
+  const containers: Container[] = (await listContainers(serverId)).map((c) => ({
+    id: c.id,
+    containerId: c.containerId,
+    name: c.name,
+    image: c.image,
+    status: c.status,
+    health: c.health as ContainerHealth,
+    ports: c.ports,
+    exitCode: c.exitCode,
+    startedAt: c.startedAt,
+    labels: c.labels as Record<string, string>,
+    networks: c.networks,
+  }));
 
   return (
     <div className="h-full overflow-y-auto bg-zinc-950 p-8">

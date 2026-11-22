@@ -14,8 +14,3 @@ Run these in order on the committed code. All must pass.
 5. `docker build -t neon:premerge .`, the real production path. If Docker isn't available, say so: that check was skipped.
 
 There is no unit or e2e test suite. Say so in the report rather than implying tests ran.
-
-## For the deploy
-
-- If the branch added anything under `prisma/migrations/`, say that the deploy must run
-  `npx prisma migrate deploy`.

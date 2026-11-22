@@ -94,13 +94,16 @@ neon/
 ## Metrics Collection
 
 - **Server metrics**: Collected every 60 seconds
-- **Container sync**: Collected every 5 minutes
+- **Container sync**: Collected every 60 seconds
 - Data stored in PostgreSQL for historical analysis
+
+## Alerts
+
+Every alert Neon can send, with its ID, severity and behaviour, is defined in the [alerts specification](docs/alerts.md).
 
 ## Future Features
 
 - Application deployment tracking
 - Framework/library version monitoring
 - Time-series charts (hourly/daily/monthly)
-- Alert notifications
 - Multi-server deployment support

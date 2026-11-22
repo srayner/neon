@@ -41,12 +41,13 @@ npm install
 
 3. Set up environment variables:
 ```bash
-cp .env.dist .env
+cp .env.example .env
 ```
 
 Edit `.env` and configure:
 - `DATABASE_URL`: PostgreSQL connection string (e.g., `postgresql://user:password@localhost:5432/neon?schema=public`)
 - `SERVER_NAME`: Name for this server instance (e.g., `localhost`, `production-01`)
+- `NTFY_URL`, `NTFY_TOPIC`, `NTFY_TOKEN` (optional): your ntfy server, topic and access token for push alerts. Without them, Settings shows Alerts as "Not configured".
 
 4. Set up the database:
 ```bash

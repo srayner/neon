@@ -9,6 +9,8 @@ interface ConfirmDialogProps {
   isDangerous?: boolean;
   isPending?: boolean;
   error?: string | null;
+  /** When set, the action is done: show this and a single Close button. */
+  success?: string | null;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -22,6 +24,7 @@ export function ConfirmDialog({
   isDangerous = false,
   isPending = false,
   error = null,
+  success = null,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -39,6 +42,12 @@ export function ConfirmDialog({
           </p>
         )}
 
+        {success && (
+          <p className="mt-3 rounded-md border border-emerald-700/50 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-400">
+            {success}
+          </p>
+        )}
+
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
@@ -46,8 +55,9 @@ export function ConfirmDialog({
             disabled={isPending}
             className="rounded-md border border-zinc-700 bg-zinc-800 px-3.5 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-zinc-600 hover:bg-zinc-700 hover:text-zinc-100 disabled:opacity-50"
           >
-            {cancelLabel}
+            {success ? "Close" : cancelLabel}
           </button>
+          {!success && (
           <button
             type="button"
             onClick={onConfirm}
@@ -60,6 +70,7 @@ export function ConfirmDialog({
           >
             {isPending ? "Working..." : confirmLabel}
           </button>
+          )}
         </div>
       </div>
     </div>

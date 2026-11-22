@@ -19,24 +19,7 @@ import {
   ListChecks,
 } from "lucide-react";
 import { DeleteServerButton } from "./components/DeleteServerButton";
-
-interface ContainerData {
-  id: number;
-  containerId: string;
-  name: string;
-  image: string;
-  status: "running" | "exited" | "paused" | "restarting";
-  health: string | null;
-  ports: string;
-}
-
-interface ServiceContainerData {
-  id: number;
-  containerId: string;
-  name: string;
-  status: "running" | "exited" | "paused" | "restarting";
-  health: string | null;
-}
+import { getServerDetail } from "@/lib/data/servers";
 
 type ServiceType =
   | "application"
@@ -45,66 +28,6 @@ type ServiceType =
   | "agent"
   | "infrastructure"
   | "task";
-
-interface ServiceDependency {
-  id: number;
-  name: string;
-  composeService: string | null;
-  status: "healthy" | "degraded" | "down";
-  dependencyType?: "requires" | "uses" | "optional";
-  inferred?: boolean;
-}
-
-interface ServiceData {
-  id: number;
-  name: string;
-  description: string | null;
-  serviceType: ServiceType | null;
-  composeProject: string | null;
-  composeService: string | null;
-  version: string | null;
-  status: "healthy" | "degraded" | "down";
-  containers: ServiceContainerData[];
-  dependsOn: ServiceDependency[];
-  dependedOnBy: ServiceDependency[];
-}
-
-interface ServerData {
-  id: number;
-  name: string;
-  hostname: string | null;
-  ipAddress: string | null;
-  status: "online" | "offline" | "maintenance";
-  cpuCores: number | null;
-  totalMemoryGb: number | undefined;
-  totalDiskGb: number | undefined;
-  cpu: number | undefined;
-  memory: number | undefined;
-  disk: number | undefined;
-  lastMetricsAt: string | null;
-  createdAt: string;
-  osName: string | null;
-  osVersion: string | null;
-  osKernel: string | null;
-  osArch: string | null;
-  dockerVersion: string | null;
-  containers: ContainerData[];
-  services: ServiceData[];
-}
-
-async function getServer(id: string): Promise<ServerData | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/servers/${id}`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    if (res.status === 404) return null;
-    throw new Error("Failed to fetch server");
-  }
-
-  return res.json();
-}
 
 const statusConfig = {
   online: { dot: "bg-emerald-400", text: "text-emerald-400", label: "Online" },
@@ -362,7 +285,8 @@ interface PageProps {
 
 export default async function ServerDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const server = await getServer(id);
+  const serverId = parseInt(id, 10);
+  const server = isNaN(serverId) ? null : await getServerDetail(serverId);
 
   if (!server) {
     notFound();
@@ -528,7 +452,7 @@ export default async function ServerDetailPage({ params }: PageProps) {
           {server.lastMetricsAt && (
             <p className="text-xs text-zinc-500 mt-3 flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              Last updated: {new Date(server.lastMetricsAt).toLocaleString()}
+              Last updated: {server.lastMetricsAt.toLocaleString()}
             </p>
           )}
         </div>

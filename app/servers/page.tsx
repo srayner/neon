@@ -1,34 +1,6 @@
 import Link from 'next/link';
 import { Server, Container, Cpu, MemoryStick, HardDrive } from 'lucide-react';
-
-interface ServerData {
-  id: number;
-  name: string;
-  hostname: string | null;
-  ipAddress: string | null;
-  status: 'online' | 'offline' | 'maintenance';
-  containerCount: number;
-  cpu?: number;
-  memory?: number;
-  disk?: number;
-  cpuCores?: number;
-  totalMemoryGb?: number;
-  totalDiskGb?: number;
-  lastMetricsAt: string | null;
-}
-
-async function getServers(): Promise<ServerData[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/servers`, {
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch servers');
-  }
-
-  return res.json();
-}
+import { listServers } from '@/lib/data/servers';
 
 const statusConfig = {
   online: {
@@ -48,9 +20,8 @@ const statusConfig = {
   },
 };
 
-function formatLastSeen(dateStr: string | null): string {
-  if (!dateStr) return 'Never';
-  const date = new Date(dateStr);
+function formatLastSeen(date: Date | null): string {
+  if (!date) return 'Never';
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -64,7 +35,7 @@ function formatLastSeen(dateStr: string | null): string {
 }
 
 export default async function ServersPage() {
-  const servers = await getServers();
+  const servers = await listServers();
 
   return (
     <div className="h-full overflow-y-auto bg-zinc-950 p-8">

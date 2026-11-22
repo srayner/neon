@@ -1,60 +1,13 @@
 import Link from 'next/link';
+import { unstable_rethrow } from 'next/navigation';
 import { Server, Container, Activity, AlertTriangle } from 'lucide-react';
 import { StatCard } from './components/StatCard';
 import { ServerStatusCard } from './components/ServerStatusCard';
+import { getStats } from '@/lib/data/stats';
+import { listServers } from '@/lib/data/servers';
+import { listRecentActivities } from '@/lib/data/activities';
 
 type ServerHealth = 'healthy' | 'warning' | 'critical';
-
-interface ServerData {
-  id: number;
-  name: string;
-  containerCount: number;
-  cpu?: number;
-  memory?: number;
-  disk?: number;
-}
-
-interface Stats {
-  totalServers: number;
-  totalContainers: number;
-  avgCpu: number;
-  activeAlerts: number;
-}
-
-async function getStats(): Promise<Stats> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/stats`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to fetch stats');
-  return res.json();
-}
-
-async function getServers(): Promise<ServerData[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/servers`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to fetch servers');
-  return res.json();
-}
-
-interface ActivityData {
-  id: number;
-  type: 'warning' | 'critical' | 'success' | 'info';
-  eventType: string;
-  message: string;
-  time: string;
-  metadata?: {
-    exitCode?: number;
-    signal?: string;
-    restartCount?: number;
-    isCrashLoop?: boolean;
-  };
-}
-
-async function getRecentActivities(): Promise<ActivityData[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/activities?limit=5`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return res.json();
-}
 
 function getServerHealth(cpu?: number, memory?: number): ServerHealth {
   if (!cpu || !memory) return 'healthy';
@@ -115,8 +68,13 @@ function getEventTypeColor(eventType: string): string {
 export default async function Dashboard() {
   const [stats, servers, activities] = await Promise.all([
     getStats(),
-    getServers(),
-    getRecentActivities(),
+    listServers(),
+    // A failure here leaves the activity list empty rather than failing the page.
+    listRecentActivities(5).catch((error) => {
+      unstable_rethrow(error); // let Next's own control-flow errors through
+      console.error('Error fetching activities:', error);
+      return [];
+    }),
   ]);
 
   return (

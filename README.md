@@ -66,7 +66,7 @@ npx tsx scripts/seed-servers.ts
 npm run dev
 ```
 
-2. Open [http://localhost:3000](http://localhost:3000)
+2. Open [http://localhost:3005](http://localhost:3005)
 
 ## Project Structure
 

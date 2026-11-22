@@ -10,7 +10,7 @@ export interface Container {
   health: ContainerHealth;
   ports: string;
   exitCode: number | null;
-  startedAt: string | null;
+  startedAt: Date | null;
   labels: Record<string, string>;
   networks: string[];
 }

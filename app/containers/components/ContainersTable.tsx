@@ -10,10 +10,9 @@ interface ContainersTableProps {
   containers: Container[];
 }
 
-function formatRelativeTime(dateString: string | null): string {
-  if (!dateString) return '-';
+function formatRelativeTime(date: Date | null): string {
+  if (!date) return '-';
 
-  const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffSecs = Math.floor(diffMs / 1000);
@@ -142,7 +141,7 @@ export function ContainersTable({ containers }: ContainersTableProps) {
                     <td className="px-4 py-3.5 text-sm">
                       <HealthBadge health={container.health} />
                     </td>
-                    <td className="px-4 py-3.5 text-sm text-zinc-400" title={container.startedAt || undefined}>
+                    <td className="px-4 py-3.5 text-sm text-zinc-400" title={container.startedAt?.toISOString()}>
                       {formatRelativeTime(container.startedAt)}
                     </td>
                     <td className="px-4 py-3.5 text-sm font-mono text-zinc-400 truncate" title={container.ports}>

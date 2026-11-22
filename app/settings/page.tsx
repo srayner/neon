@@ -1,13 +1,6 @@
 import { Info } from "lucide-react";
 import { SendTestAlertButton } from "./components/SendTestAlertButton";
-
-async function getSettings() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/settings`, {
-    cache: "no-store",
-  });
-  return res.json();
-}
+import { getSettings } from "@/lib/data/settings";
 
 export default async function SettingsPage() {
   const settings = await getSettings();

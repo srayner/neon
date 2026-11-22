@@ -53,6 +53,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Install OpenSSL and glibc compatibility for Prisma
 RUN apk upgrade --no-cache && apk add --no-cache openssl libc6-compat
 
+# Nothing at runtime needs npm: the app starts via node and migrations run from
+# the locked prisma CLI copied below. Removing it drops npm's bundled deps
+# (and their CVEs) from the image.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -64,6 +69,9 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# The prisma CLI (a regular dependency) so the deploy runs `migrate deploy` at
+# the version locked in package-lock.json. Its engines are in @prisma above.
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
 # Set ownership
 RUN chown -R nextjs:nodejs /app

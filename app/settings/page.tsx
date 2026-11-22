@@ -1,4 +1,5 @@
 import { Info } from "lucide-react";
+import { SendTestAlertButton } from "./components/SendTestAlertButton";
 
 async function getSettings() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -60,6 +61,55 @@ export default async function SettingsPage() {
                 The root directory where backup files are stored. Set via the
                 BACKUP_ROOT environment variable.
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Alerts Card */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-zinc-100">Alerts</h2>
+
+          <div className="space-y-4">
+            {!settings.ntfy.configured && (
+              <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2.5">
+                <span className="text-sm text-amber-400">Not configured</span>
+              </div>
+            )}
+
+            {(
+              [
+                ["ntfy Server", settings.ntfy.url, "NTFY_URL"],
+                ["Topic", settings.ntfy.topic, "NTFY_TOPIC"],
+                [
+                  "Access Token",
+                  settings.ntfy.tokenSet ? "Set" : null,
+                  "NTFY_TOKEN",
+                ],
+              ] as const
+            ).map(([label, value, envVar]) => (
+              <div key={envVar} className="space-y-2">
+                <label className="text-sm font-medium text-zinc-400">
+                  {label}
+                </label>
+                {value ? (
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-800 px-4 py-2.5">
+                    <code className="font-mono text-sm text-zinc-100">
+                      {value}
+                    </code>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-2.5">
+                    <span className="text-sm text-amber-400">Not set</span>
+                  </div>
+                )}
+                <p className="text-xs text-zinc-500">
+                  Set via the {envVar} environment variable.
+                </p>
+              </div>
+            ))}
+
+            <div className="pt-2">
+              <SendTestAlertButton disabled={!settings.ntfy.configured} />
             </div>
           </div>
         </div>

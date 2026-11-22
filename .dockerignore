@@ -12,7 +12,6 @@ packages/shared/dist
 .env
 .env.*
 !.env.example
-!.env.dist
 
 # Git
 .git

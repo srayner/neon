@@ -1,6 +1,6 @@
 {
   "name": "neon",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -15,10 +15,11 @@
     "agent:dev": "npm run build:shared && dotenv -e packages/agent/.env -- npm run dev -w @neon/agent",
     "agent:start": "dotenv -e packages/agent/.env -- npm run start -w @neon/agent",
     "agent:bundle": "npm run build:shared && npm run bundle -w @neon/agent",
-    "docker:build:agent": "npm run agent:bundle && docker build -t neon-agent:latest -f packages/agent/Dockerfile ."
+    "docker:build:agent": "npm run agent:bundle && docker build -t neon-agent:latest -f packages/agent/Dockerfile .",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "^6.19.3",
     "@types/dockerode": "^4.0.0",
     "@types/node-cron": "^3.0.11",
     "dockerode": "^5.0.1",
@@ -26,7 +27,7 @@
     "lucide-react": "^0.562.0",
     "next": "15.5.29",
     "node-cron": "^4.2.1",
-    "prisma": "^5.22.0",
+    "prisma": "^6.19.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.6.0",
@@ -42,9 +43,14 @@
     "eslint-config-next": "16.4.3",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "5.0.5"
   },
   "overrides": {
+    "@prisma/config": {
+      "effect": "^3.22.5",
+      "deepmerge-ts": "^8.0.0"
+    },
     "next": {
       "postcss": "^8.5.23"
     }

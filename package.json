@@ -21,7 +21,7 @@
     "@prisma/client": "^5.22.0",
     "@types/dockerode": "^4.0.0",
     "@types/node-cron": "^3.0.11",
-    "dockerode": "^4.0.9",
+    "dockerode": "^5.0.1",
     "jose": "^6.1.3",
     "lucide-react": "^0.562.0",
     "next": "15.5.29",

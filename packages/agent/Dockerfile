@@ -9,7 +9,7 @@ WORKDIR /app
 RUN npm init -y && \
     npm install --omit=dev \
       systeminformation@^5.30.4 \
-      dockerode@^4.0.9 && \
+      dockerode@^5.0.1 && \
     rm -rf /root/.npm /tmp/*
 
 # Copy the bundled agent (built outside Docker)

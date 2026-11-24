@@ -1,5 +1,6 @@
 import { Info } from "lucide-react";
 import { SendTestAlertButton } from "./components/SendTestAlertButton";
+import { AlertRulesForm } from "./components/AlertRulesForm";
 import { getSettings } from "@/lib/data/settings";
 
 export default async function SettingsPage() {
@@ -12,7 +13,7 @@ export default async function SettingsPage() {
           <h1 className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-3xl font-bold text-transparent">
             Settings
           </h1>
-          <p className="text-zinc-400">View system configuration settings</p>
+          <p className="text-zinc-400">System configuration and alert rules</p>
         </div>
 
         {/* Info Card */}
@@ -20,9 +21,9 @@ export default async function SettingsPage() {
           <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-cyan-400" />
           <div className="text-sm text-zinc-400">
             <p>
-              These settings are configured via environment variables and are
-              read-only. They cannot be changed from this interface. Contact
-              your system administrator to modify these values.
+              Configuration and the ntfy connection come from environment
+              variables and can&apos;t be changed here. Alert rules are stored
+              in Neon&apos;s database and can be edited below.
             </p>
           </div>
         </div>
@@ -101,10 +102,42 @@ export default async function SettingsPage() {
               </div>
             ))}
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-400">
+                Failed Notifications
+              </label>
+              <div
+                className={`rounded-lg border px-4 py-2.5 ${
+                  settings.failedNotifications > 0
+                    ? "border-red-900/50 bg-red-950/30"
+                    : "border-zinc-800 bg-zinc-800"
+                }`}
+              >
+                <span
+                  className={`font-mono text-sm ${
+                    settings.failedNotifications > 0 ? "text-red-400" : "text-zinc-100"
+                  }`}
+                >
+                  {settings.failedNotifications}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500">
+                Notifications not delivered within an hour of the alert. The
+                alerts are still recorded in Neon.
+              </p>
+            </div>
+
             <div className="pt-2">
               <SendTestAlertButton disabled={!settings.ntfy.configured} />
             </div>
           </div>
+        </div>
+
+        {/* Alert Rules Card */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <h2 className="mb-1 text-lg font-semibold text-zinc-100">Alert Rules</h2>
+          <p className="mb-4 text-sm text-zinc-500">Apply to every server.</p>
+          <AlertRulesForm initialRules={settings.alertRules} />
         </div>
       </div>
     </div>

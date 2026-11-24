@@ -5,8 +5,9 @@ severe it is, how it behaves over time, where it is decided and how it is
 tested. It is the source of truth: the code and its tests must follow it.
 When behaviour needs to change, change this document first.
 
-**Status:** specification only. Apart from the test alert on the Settings
-page, none of these alerts is built yet.
+**Status:** the alert engine (sections 4, 5 and 7.1) is built. Apart from
+the test alert on the Settings page, none of the alerts in section 6 is built
+yet.
 
 ---
 
@@ -163,8 +164,10 @@ directly.
    when ntfy comes back after a long outage. The alert itself is still
    recorded in Neon.
 
-Every message states the time the change happened (e.g. "atlas down at
-14:02"), so a notification that arrives late does not mislead. The Alerts
+Every notification states the time the change happened, in UTC (e.g.
+"atlas down at 14:02 UTC on 24 Nov 2026"), so a notification that arrives
+late does not mislead. Times are stored in UTC; Neon's web pages can show
+them in UTC or the browser's local time. The Alerts
 section of the Settings page shows how many notifications have failed.
 
 ### Subjects that are recreated

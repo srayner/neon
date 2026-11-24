@@ -3,6 +3,8 @@ import { unstable_rethrow } from 'next/navigation';
 import { Server, Container, Activity, AlertTriangle } from 'lucide-react';
 import { StatCard } from './components/StatCard';
 import { ServerStatusCard } from './components/ServerStatusCard';
+import { ActivityTime } from './components/ActivityTime';
+import { TimeZoneToggle } from './components/TimeZoneToggle';
 import { getStats } from '@/lib/data/stats';
 import { listServers } from '@/lib/data/servers';
 import { listRecentActivities } from '@/lib/data/activities';
@@ -39,6 +41,9 @@ const eventTypeLabels: Record<string, string> = {
   unpaused: 'Unpaused',
   killed: 'Killed',
   crash_loop: 'Crash Loop',
+  alert_opened: 'Alert',
+  alert_resolved: 'Resolved',
+  alert_event: 'Event',
 };
 
 function getEventTypeColor(eventType: string): string {
@@ -55,6 +60,7 @@ function getEventTypeColor(eventType: string): string {
       return 'bg-zinc-500/20 text-zinc-400';
     case 'created':
     case 'manual_restart':
+    case 'alert_resolved':
     case 'unpaused':
     case 'online':
       return 'bg-emerald-500/20 text-emerald-400';
@@ -152,6 +158,7 @@ export default async function Dashboard() {
           <div className="lg:col-span-1">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-zinc-50">Recent Activity</h2>
+              <TimeZoneToggle />
             </div>
             <div className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
               {activities.length === 0 ? (
@@ -188,7 +195,7 @@ export default async function Dashboard() {
                         )}
                       </div>
                     )}
-                    <p className="mt-1 text-xs text-zinc-500">{activity.time}</p>
+                    <ActivityTime at={activity.createdAt} relative={activity.time} />
                   </div>
                 ))
               )}

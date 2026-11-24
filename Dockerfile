@@ -27,6 +27,8 @@ COPY package*.json ./
 COPY tsconfig.json ./
 COPY next.config.ts ./
 COPY postcss.config.mjs ./
+# Starts the scheduled alert check when the server starts.
+COPY instrumentation.ts ./
 COPY app ./app
 COPY lib ./lib
 COPY public ./public

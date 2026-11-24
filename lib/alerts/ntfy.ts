@@ -36,9 +36,11 @@ function getNtfyConfig(): NtfyConfig | null {
 
 export type SendResult = { ok: true } | { ok: false; error: string };
 
+/** `priority` is ntfy's 1 to 5; left out, ntfy uses its default (3). */
 export async function sendNtfyAlert(
   title: string,
-  message: string
+  message: string,
+  priority?: number
 ): Promise<SendResult> {
   const config = getNtfyConfig();
   if (!config) {
@@ -54,6 +56,7 @@ export async function sendNtfyAlert(
       headers: {
         Authorization: `Bearer ${config.token}`,
         Title: title,
+        ...(priority !== undefined && { Priority: String(priority) }),
       },
       body: message,
       signal: AbortSignal.timeout(SEND_TIMEOUT_MS),

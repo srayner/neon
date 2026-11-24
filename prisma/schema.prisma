@@ -77,6 +77,36 @@ enum EventType {
   unpaused
   killed
   crash_loop
+  alert_opened
+  alert_resolved
+  alert_event
+}
+
+enum AlertKind {
+  condition
+  event
+}
+
+enum AlertSeverity {
+  critical
+  warning
+  info
+}
+
+enum AlertStatus {
+  open
+  resolved
+}
+
+enum NotificationKind {
+  opened
+  resolved
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  failed
 }
 
 model Server {
@@ -115,6 +145,7 @@ model Server {
   metrics               ServerMetric[]
   services              Service[]
   activities            Activity[]
+  alerts                Alert[]
 
   @@map("server")
 }
@@ -226,14 +257,69 @@ model Activity {
   containerId Int?         @map("container_id")
   serviceId   Int?         @map("service_id")
   metadata    Json         @default("{}")
+  alertId     Int?         @map("alert_id")
   createdAt   DateTime     @default(now()) @map("created_at")
 
   // Relations
   server      Server       @relation(fields: [serverId], references: [id], onDelete: Cascade)
   container   Container?   @relation(fields: [containerId], references: [id], onDelete: SetNull)
   service     Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  alert       Alert?       @relation(fields: [alertId], references: [id], onDelete: Cascade)
 
   @@index([serverId, createdAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
   @@map("activity")
+}
+
+// An alert, as defined in docs/alerts.md section 5. At most one open alert per
+// (code, server, subject): enforced by the partial unique index
+// "alert_one_open_per_subject" in the migration (Prisma can't express it).
+model Alert {
+  id            Int                 @id @default(autoincrement())
+  code          String              // alert ID from docs/alerts.md, e.g. "C1"
+  kind          AlertKind
+  severity      AlertSeverity
+  serverId      Int                 @map("server_id")
+  subjectKey    String              @default("") @map("subject_key") // service, container or image; "" for the server itself
+  message       String
+  status        AlertStatus
+  openedAt      DateTime            @map("opened_at")
+  resolvedAt    DateTime?           @map("resolved_at")
+
+  server        Server              @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  notifications AlertNotification[]
+  activities    Activity[]
+
+  @@index([serverId, openedAt(sort: Desc)])
+  @@map("alert")
+}
+
+model AlertNotification {
+  id         Int                @id @default(autoincrement())
+  alertId    Int                @map("alert_id")
+  kind       NotificationKind
+  severity   AlertSeverity      // the alert's severity when opening; info when resolving
+  status     NotificationStatus @default(pending)
+  attempts   Int                @default(0)
+  lastError  String?            @map("last_error")
+  createdAt  DateTime           @map("created_at")
+  sentAt     DateTime?          @map("sent_at")
+
+  alert      Alert              @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@map("alert_notification")
+}
+
+// The alert rules from docs/alerts.md section 7.1. A single row (id 1); no row
+// means the defaults apply.
+model AlertRules {
+  id                     Int      @id @default(1)
+  crashLoopCount         Int      @map("crash_loop_count")
+  crashLoopWindowMinutes Int      @map("crash_loop_window_minutes")
+  missedHeartbeats       Int      @map("missed_heartbeats")
+  highUsageMinutes       Int      @map("high_usage_minutes")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("alert_rules")
 }

@@ -1,60 +1,66 @@
-import cron from 'node-cron';
+import type Docker from 'dockerode';
+import type { DockerGap } from '@neon/shared';
 import type { AgentConfig } from './config.js';
 import { MasterClient } from './transport/client.js';
-import { MetricsBuffer, ContainerEventsBuffer } from './transport/buffer.js';
+import { MetricsBuffer } from './transport/buffer.js';
 import { collectMetrics, getServerInfo } from './collectors/metrics.js';
 import { collectContainers, isDockerAvailable } from './collectors/docker.js';
-import { DockerEventMonitor } from './collectors/docker-events.js';
+import { DockerWatcher } from './collectors/docker-watcher.js';
+import { StopRequests } from './collectors/stop-requests.js';
+import { repeat } from './schedule.js';
+import { coalesce } from './coalesce.js';
 
 /**
- * Scheduler manages periodic collection and reporting tasks
+ * Collects facts and reports them to Neon (docs/alerts.md section 2). It
+ * decides nothing: severity and alerts are Neon's.
  */
 export class Scheduler {
   private config: AgentConfig;
   private client: MasterClient;
+  private docker: Docker;
   private buffer: MetricsBuffer;
-  private eventsBuffer: ContainerEventsBuffer;
-  private eventMonitor: DockerEventMonitor | null = null;
-  private tasks: cron.ScheduledTask[] = [];
-  private dockerAvailable: boolean = false;
+  private stopRequests = new StopRequests();
+  private watcher: DockerWatcher;
+  private stopSchedules: (() => void)[] = [];
+  /** Gaps not yet accepted by Neon, oldest first. */
+  private pendingGaps: DockerGap[] = [];
 
-  constructor(config: AgentConfig, client: MasterClient) {
+  /** Reads and sends the full container list; calls during a sync share the next one. */
+  readonly syncContainers = coalesce(() => this.collectAndSendContainers());
+  /** Sends pending gaps; one send at a time, so a gap is never removed twice. */
+  private readonly flushGaps = coalesce(() => this.sendPendingGaps());
+
+  constructor(config: AgentConfig, client: MasterClient, docker: Docker) {
     this.config = config;
     this.client = client;
+    this.docker = docker;
     this.buffer = new MetricsBuffer(config.bufferMaxSize);
-    this.eventsBuffer = new ContainerEventsBuffer(config.containerEventsBufferMaxSize);
+    this.watcher = new DockerWatcher({
+      docker,
+      onEvent: (event) => this.stopRequests.record(event),
+      onChange: () => void this.syncContainers(),
+      onGap: (gap) => {
+        this.pendingGaps.push(gap);
+        void this.flushGaps();
+      },
+    });
   }
 
   /**
    * Start all scheduled tasks
    */
   async start(): Promise<void> {
-    // Check Docker availability
-    this.dockerAvailable = await isDockerAvailable();
-    if (this.dockerAvailable) {
-      console.log('[Scheduler] Docker is available');
-    } else {
-      console.log('[Scheduler] Docker is not available - container sync disabled');
-    }
-
-    // Register with master
     await this.registerWithMaster();
 
-    // Run initial collection immediately
     await this.collectAndSendMetrics();
-    if (this.dockerAvailable) {
-      await this.collectAndSendContainers();
+    await this.sendHeartbeat();
+    // Its first connection prompts the first container sync. If Docker can't
+    // be reached it keeps trying, and syncs once it can.
+    this.watcher.start();
 
-      // Start Docker event monitoring if enabled
-      if (this.config.containerEventsEnabled) {
-        await this.startEventMonitor();
-      }
-    }
-
-    // Schedule periodic tasks
-    this.scheduleMetrics();
-    this.scheduleContainers();
-    this.scheduleHeartbeat();
+    this.schedule('Metrics collection', this.config.metricsIntervalSeconds, () => this.collectAndSendMetrics());
+    this.schedule('Container sync', this.config.containersIntervalSeconds, () => this.syncContainers());
+    this.schedule('Heartbeat', this.config.heartbeatIntervalSeconds, () => this.sendHeartbeat());
 
     console.log('[Scheduler] All tasks scheduled');
   }
@@ -63,24 +69,20 @@ export class Scheduler {
    * Stop all scheduled tasks
    */
   stop(): void {
-    // Stop cron tasks
-    for (const task of this.tasks) {
-      task.stop();
-    }
-    this.tasks = [];
-
-    // Stop event monitor
-    if (this.eventMonitor) {
-      this.eventMonitor.stop();
-      this.eventMonitor = null;
-    }
-
+    for (const stop of this.stopSchedules) stop();
+    this.stopSchedules = [];
+    this.watcher.stop();
     console.log('[Scheduler] All tasks stopped');
+  }
+
+  private schedule(name: string, seconds: number, task: () => Promise<void>): void {
+    this.stopSchedules.push(repeat(seconds * 1000, task, name));
+    console.log(`[Scheduler] ${name} scheduled every ${seconds}s`);
   }
 
   private async registerWithMaster(): Promise<void> {
     console.log('[Scheduler] Registering with master...');
-    const serverInfo = await getServerInfo(this.config.serverName);
+    const serverInfo = await getServerInfo(this.config.serverName, this.docker, this.config.heartbeatIntervalSeconds);
     await this.client.register(serverInfo);
   }
 
@@ -95,35 +97,6 @@ export class Scheduler {
       }
     }
     return true;
-  }
-
-  private scheduleMetrics(): void {
-    const cronExpr = `*/${this.config.metricsIntervalSeconds} * * * * *`;
-    const task = cron.schedule(cronExpr, async () => {
-      await this.collectAndSendMetrics();
-    });
-    this.tasks.push(task);
-    console.log(`[Scheduler] Metrics collection scheduled every ${this.config.metricsIntervalSeconds}s`);
-  }
-
-  private scheduleContainers(): void {
-    if (!this.dockerAvailable) return;
-
-    const cronExpr = `*/${this.config.containersIntervalSeconds} * * * * *`;
-    const task = cron.schedule(cronExpr, async () => {
-      await this.collectAndSendContainers();
-    });
-    this.tasks.push(task);
-    console.log(`[Scheduler] Container sync scheduled every ${this.config.containersIntervalSeconds}s`);
-  }
-
-  private scheduleHeartbeat(): void {
-    const cronExpr = `*/${this.config.heartbeatIntervalSeconds} * * * * *`;
-    const task = cron.schedule(cronExpr, async () => {
-      await this.sendHeartbeat();
-    });
-    this.tasks.push(task);
-    console.log(`[Scheduler] Heartbeat scheduled every ${this.config.heartbeatIntervalSeconds}s`);
   }
 
   private async collectAndSendMetrics(): Promise<void> {
@@ -163,66 +136,42 @@ export class Scheduler {
     }
   }
 
+  /**
+   * Nothing to buffer on failure: the next sync sends the whole current state.
+   */
   private async collectAndSendContainers(): Promise<void> {
     try {
-      const containers = await collectContainers();
+      const containers = await collectContainers(this.docker, this.stopRequests);
       console.log(`[Scheduler] Collected ${containers.length} containers`);
 
       if (await this.ensureRegistered()) {
-        try {
-          await this.client.sendContainers(containers);
-
-          // Also flush container events alongside container sync
-          await this.flushContainerEvents();
-        } catch (error) {
-          console.warn('[Scheduler] Failed to send containers:', (error as Error).message);
-        }
+        await this.client.sendContainers(containers);
       }
     } catch (error) {
-      console.error('[Scheduler] Error collecting containers:', (error as Error).message);
+      console.warn('[Scheduler] Container sync failed:', (error as Error).message);
     }
   }
 
-  /**
-   * Start Docker event monitor
-   */
-  private async startEventMonitor(): Promise<void> {
+  private async sendPendingGaps(): Promise<void> {
+    if (this.pendingGaps.length === 0) return;
+    if (!(await this.ensureRegistered())) return;
+
+    const batch = this.pendingGaps.slice();
     try {
-      this.eventMonitor = new DockerEventMonitor((event) => {
-        this.eventsBuffer.add(event);
-        console.log(`[Scheduler] Buffered container event: ${event.action} for ${event.containerName} (severity: ${event.severity})`);
-      });
-
-      await this.eventMonitor.start();
+      await this.client.sendDockerGaps(batch);
+      // Gaps added while sending stay for the next flush.
+      this.pendingGaps.splice(0, batch.length);
+      console.log(`[Scheduler] Sent ${batch.length} Docker gap(s)`);
     } catch (error) {
-      console.error('[Scheduler] Failed to start Docker event monitor:', (error as Error).message);
-      this.eventMonitor = null;
-    }
-  }
-
-  /**
-   * Flush buffered container events to master
-   */
-  private async flushContainerEvents(): Promise<void> {
-    if (!this.eventsBuffer.hasData()) {
-      return;
-    }
-
-    try {
-      const events = this.eventsBuffer.flush();
-      console.log(`[Scheduler] Flushing ${events.length} container event(s)`);
-
-      await this.client.sendContainerEvents(events);
-    } catch (error) {
-      console.warn('[Scheduler] Failed to send container events:', (error as Error).message);
-      // Note: Events are lost if send fails - this is acceptable per design
+      console.warn(`[Scheduler] Failed to send ${batch.length} Docker gap(s), will retry:`, (error as Error).message);
     }
   }
 
   private async sendHeartbeat(): Promise<void> {
     try {
+      const dockerReachable = await isDockerAvailable(this.docker);
       if (await this.ensureRegistered()) {
-        const { tokenExpiresIn } = await this.client.heartbeat();
+        const { tokenExpiresIn } = await this.client.heartbeat(dockerReachable);
 
         // Re-register if token is expiring soon (within 1 hour)
         if (tokenExpiresIn < 3600) {
@@ -234,5 +183,7 @@ export class Scheduler {
     } catch (error) {
       console.warn('[Scheduler] Heartbeat failed:', (error as Error).message);
     }
+    // Retry gaps Neon has not yet accepted.
+    await this.flushGaps();
   }
 }

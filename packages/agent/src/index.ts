@@ -1,3 +1,4 @@
+import Docker from 'dockerode';
 import { loadConfig, printConfig } from './config.js';
 import { MasterClient } from './transport/client.js';
 import { Scheduler } from './scheduler.js';
@@ -17,7 +18,8 @@ async function main() {
 
   // Create client and scheduler
   const client = new MasterClient(config, version);
-  const scheduler = new Scheduler(config, client);
+  // Uses DOCKER_HOST when set, otherwise /var/run/docker.sock.
+  const scheduler = new Scheduler(config, client, new Docker());
 
   // Handle graceful shutdown
   const shutdown = async () => {

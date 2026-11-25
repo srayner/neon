@@ -16,17 +16,16 @@
     "agent:start": "dotenv -e packages/agent/.env -- npm run start -w @neon/agent",
     "agent:bundle": "npm run build:shared && npm run bundle -w @neon/agent",
     "docker:build:agent": "npm run agent:bundle && docker build -t neon-agent:latest -f packages/agent/Dockerfile .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:docker": "vitest run --config vitest.docker.config.mts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@types/dockerode": "^4.0.0",
-    "@types/node-cron": "^3.0.11",
     "dockerode": "^5.0.1",
     "jose": "^6.1.3",
     "lucide-react": "^0.562.0",
     "next": "15.5.29",
-    "node-cron": "^4.2.1",
     "prisma": "^6.19.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",

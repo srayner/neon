@@ -129,8 +129,8 @@ docker-compose logs -f
 | `SERVER_NAME` | Yes | - | Unique name for this server |
 | `MASTER_URL` | Yes | - | URL of the Neon master server |
 | `AGENT_SECRET` | Yes | - | Shared secret for authentication |
-| `METRICS_INTERVAL` | No | 300 | Seconds between metrics collection |
-| `CONTAINERS_INTERVAL` | No | 900 | Seconds between container sync |
+| `METRICS_INTERVAL` | No | 60 | Seconds between metrics collection |
+| `CONTAINERS_INTERVAL` | No | 300 | Seconds between container syncs, besides the ones Docker events prompt |
 | `HEARTBEAT_INTERVAL` | No | 60 | Seconds between heartbeats |
 | `BUFFER_ENABLED` | No | true | Buffer metrics when master is down |
 | `BUFFER_MAX_SIZE` | No | 100 | Max buffered metrics before dropping |

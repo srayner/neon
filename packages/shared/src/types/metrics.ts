@@ -12,6 +12,7 @@ export interface ServerInfo {
   osKernel: string;
   osArch: string;
   dockerVersion: string | null;
+  heartbeatIntervalSeconds: number; // How often this agent sends heartbeats
 }
 
 /**
@@ -55,48 +56,25 @@ export interface ContainerInfo {
   labels: Record<string, string>;
   networks: string[];
   startedAt: string | null; // ISO 8601 timestamp
-  exitCode: number | null; // Exit code when status is "exited"
+  finishedAt: string | null; // ISO 8601, when it last exited
+  exitCode: number | null; // Exit code of the last exit
+  oomKilled: boolean; // The last exit was the kernel's out-of-memory killer
+  restartCount: number; // Docker's count of restarts under the restart policy
+  stopRequest: StopRequest; // Only set while the container is not running
 }
 
 /**
- * Docker container event actions
+ * A request to stop a container that Docker reported before the container
+ * exited: "stop" (docker stop), "kill" (docker kill, docker rm -f) or null
+ * (none seen: it exited by itself, or the agent was not watching).
  */
-export type ContainerEventAction =
-  | "create"
-  | "start"
-  | "stop"
-  | "die"
-  | "kill"
-  | "restart"
-  | "pause"
-  | "unpause"
-  | "destroy"
-  | "health_status";
+export type StopRequest = "stop" | "kill" | null;
 
 /**
- * Severity levels for container events
+ * A period when the agent could not see Docker's events, so changes may have
+ * been missed.
  */
-export type ContainerEventSeverity = "info" | "warning" | "error" | "critical";
-
-/**
- * Raw container event from Docker events stream
- */
-export interface ContainerEvent {
-  containerId: string;
-  containerName: string;
-  image: string;
-  action: ContainerEventAction;
-  timestamp: string; // ISO 8601 - actual Docker event time
-  exitCode: number | null;
-  signal: string | null;
-  healthStatus: ContainerHealth | null;
-}
-
-/**
- * Processed container event with severity and crash loop detection
- */
-export interface ProcessedContainerEvent extends ContainerEvent {
-  severity: ContainerEventSeverity;
-  restartCount: number; // restarts within time window (for crash loop detection)
-  isCrashLoop: boolean;
+export interface DockerGap {
+  from: string; // ISO 8601
+  to: string; // ISO 8601
 }

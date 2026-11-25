@@ -8,6 +8,11 @@ import type {
   ApiResponse,
 } from "@neon/shared";
 
+/** A whole number of seconds, or null for agents that don't send it. */
+function heartbeatInterval(value: unknown): number | null {
+  return Number.isInteger(value) && (value as number) > 0 ? (value as number) : null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Validate agent secret
@@ -50,6 +55,7 @@ export async function POST(request: NextRequest) {
         osKernel: serverInfo.osKernel,
         osArch: serverInfo.osArch,
         dockerVersion: serverInfo.dockerVersion,
+        heartbeatIntervalSeconds: heartbeatInterval(serverInfo.heartbeatIntervalSeconds),
         status: "online",
       },
       create: {
@@ -63,6 +69,7 @@ export async function POST(request: NextRequest) {
         osKernel: serverInfo.osKernel,
         osArch: serverInfo.osArch,
         dockerVersion: serverInfo.dockerVersion,
+        heartbeatIntervalSeconds: heartbeatInterval(serverInfo.heartbeatIntervalSeconds),
         status: "online",
       },
     });

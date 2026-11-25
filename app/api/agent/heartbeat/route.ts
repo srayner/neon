@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAgentToken, extractBearerToken, getTokenExpiresIn } from '@/lib/auth/jwt';
-import type { AgentHeartbeatResponse, ApiResponse } from '@neon/shared';
+import { recordDockerReachable } from '@/lib/agent/facts';
+import type { AgentHeartbeatRequest, AgentHeartbeatResponse, ApiResponse } from '@neon/shared';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { serverId, serverName } = payload;
+    const body: Partial<AgentHeartbeatRequest> = await request.json().catch(() => ({}));
 
     // Update server status to online
     await prisma.server.update({
@@ -31,6 +33,11 @@ export async function POST(request: NextRequest) {
         status: 'online',
       },
     });
+
+    // Agents older than this field leave the stored value alone.
+    if (typeof body.dockerReachable === 'boolean') {
+      await recordDockerReachable(serverId, body.dockerReachable, new Date());
+    }
 
     const tokenExpiresIn = getTokenExpiresIn(payload);
 

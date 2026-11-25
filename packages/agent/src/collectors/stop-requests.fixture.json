@@ -1,0 +1,513 @@
+{
+  "dockerVersion": "29.6.2",
+  "recordedAt": "2026-11-25T21:22:20.410Z",
+  "scenarios": [
+    {
+      "scenario": "docker stop",
+      "expected": "stop",
+      "events": [
+        {
+          "Type": "container",
+          "Action": "create",
+          "Actor": {
+            "ID": "cfd932f64c11d03a687d374d1e55bbffde9e7f144dbbebcc3d03ac0787e086a0",
+            "Attributes": {
+              "name": "neon-record-0"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "start",
+          "Actor": {
+            "ID": "cfd932f64c11d03a687d374d1e55bbffde9e7f144dbbebcc3d03ac0787e086a0",
+            "Attributes": {
+              "name": "neon-record-0"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "kill",
+          "Actor": {
+            "ID": "cfd932f64c11d03a687d374d1e55bbffde9e7f144dbbebcc3d03ac0787e086a0",
+            "Attributes": {
+              "name": "neon-record-0",
+              "signal": "15"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "stop",
+          "Actor": {
+            "ID": "cfd932f64c11d03a687d374d1e55bbffde9e7f144dbbebcc3d03ac0787e086a0",
+            "Attributes": {
+              "name": "neon-record-0"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "die",
+          "Actor": {
+            "ID": "cfd932f64c11d03a687d374d1e55bbffde9e7f144dbbebcc3d03ac0787e086a0",
+            "Attributes": {
+              "name": "neon-record-0",
+              "exitCode": "0"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "docker stop, timeout then SIGKILL",
+      "expected": "stop",
+      "events": [
+        {
+          "Type": "container",
+          "Action": "create",
+          "Actor": {
+            "ID": "66ec92b8c2580a88725698ed3a71c18b0ba7c7a5bd0af9a5606e4d181110537f",
+            "Attributes": {
+              "name": "neon-record-1"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "start",
+          "Actor": {
+            "ID": "66ec92b8c2580a88725698ed3a71c18b0ba7c7a5bd0af9a5606e4d181110537f",
+            "Attributes": {
+              "name": "neon-record-1"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "kill",
+          "Actor": {
+            "ID": "66ec92b8c2580a88725698ed3a71c18b0ba7c7a5bd0af9a5606e4d181110537f",
+            "Attributes": {
+              "name": "neon-record-1",
+              "signal": "15"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "kill",
+          "Actor": {
+            "ID": "66ec92b8c2580a88725698ed3a71c18b0ba7c7a5bd0af9a5606e4d181110537f",
+            "Attributes": {
+              "name": "neon-record-1",
+              "signal": "9"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "stop",
+          "Actor": {
+            "ID": "66ec92b8c2580a88725698ed3a71c18b0ba7c7a5bd0af9a5606e4d181110537f",
+            "Attributes": {
+              "name": "neon-record-1"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "die",
+          "Actor": {
+            "ID": "66ec92b8c2580a88725698ed3a71c18b0ba7c7a5bd0af9a5606e4d181110537f",
+            "Attributes": {
+              "name": "neon-record-1",
+              "exitCode": "137"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "docker kill",
+      "expected": "kill",
+      "events": [
+        {
+          "Type": "container",
+          "Action": "create",
+          "Actor": {
+            "ID": "a7d2bf7155aad8ee9639b69f2925524248ad23b31f2753f4391dbf7a843d40e0",
+            "Attributes": {
+              "name": "neon-record-2"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "start",
+          "Actor": {
+            "ID": "a7d2bf7155aad8ee9639b69f2925524248ad23b31f2753f4391dbf7a843d40e0",
+            "Attributes": {
+              "name": "neon-record-2"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "kill",
+          "Actor": {
+            "ID": "a7d2bf7155aad8ee9639b69f2925524248ad23b31f2753f4391dbf7a843d40e0",
+            "Attributes": {
+              "name": "neon-record-2",
+              "signal": "9"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "die",
+          "Actor": {
+            "ID": "a7d2bf7155aad8ee9639b69f2925524248ad23b31f2753f4391dbf7a843d40e0",
+            "Attributes": {
+              "name": "neon-record-2",
+              "exitCode": "137"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "docker rm -f",
+      "expected": "kill",
+      "events": [
+        {
+          "Type": "container",
+          "Action": "create",
+          "Actor": {
+            "ID": "7dfdf2909aab5c8582e1027f84b817239a0397bb59ae44835055b23361c58774",
+            "Attributes": {
+              "name": "neon-record-3"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "start",
+          "Actor": {
+            "ID": "7dfdf2909aab5c8582e1027f84b817239a0397bb59ae44835055b23361c58774",
+            "Attributes": {
+              "name": "neon-record-3"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "kill",
+          "Actor": {
+            "ID": "7dfdf2909aab5c8582e1027f84b817239a0397bb59ae44835055b23361c58774",
+            "Attributes": {
+              "name": "neon-record-3",
+              "signal": "9"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "die",
+          "Actor": {
+            "ID": "7dfdf2909aab5c8582e1027f84b817239a0397bb59ae44835055b23361c58774",
+            "Attributes": {
+              "name": "neon-record-3",
+              "exitCode": "137"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "destroy",
+          "Actor": {
+            "ID": "7dfdf2909aab5c8582e1027f84b817239a0397bb59ae44835055b23361c58774",
+            "Attributes": {
+              "name": "neon-record-3"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "crash (exit 3)",
+      "expected": null,
+      "events": [
+        {
+          "Type": "container",
+          "Action": "create",
+          "Actor": {
+            "ID": "372cd1110aad4df138ad48f2936815f215c6cc597126687c8bbd8802c2accbae",
+            "Attributes": {
+              "name": "neon-record-4"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "start",
+          "Actor": {
+            "ID": "372cd1110aad4df138ad48f2936815f215c6cc597126687c8bbd8802c2accbae",
+            "Attributes": {
+              "name": "neon-record-4"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "die",
+          "Actor": {
+            "ID": "372cd1110aad4df138ad48f2936815f215c6cc597126687c8bbd8802c2accbae",
+            "Attributes": {
+              "name": "neon-record-4",
+              "exitCode": "3"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "out of memory",
+      "expected": null,
+      "events": [
+        {
+          "Type": "container",
+          "Action": "create",
+          "Actor": {
+            "ID": "6e31d4f687205a05bd73fc429d84b48c41da9cbccec737fdb037ce5b69106086",
+            "Attributes": {
+              "name": "neon-record-5"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "start",
+          "Actor": {
+            "ID": "6e31d4f687205a05bd73fc429d84b48c41da9cbccec737fdb037ce5b69106086",
+            "Attributes": {
+              "name": "neon-record-5"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "oom",
+          "Actor": {
+            "ID": "6e31d4f687205a05bd73fc429d84b48c41da9cbccec737fdb037ce5b69106086",
+            "Attributes": {
+              "name": "neon-record-5"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "die",
+          "Actor": {
+            "ID": "6e31d4f687205a05bd73fc429d84b48c41da9cbccec737fdb037ce5b69106086",
+            "Attributes": {
+              "name": "neon-record-5",
+              "exitCode": "137"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "docker restart, then crash",
+      "expected": null,
+      "events": [
+        {
+          "Type": "container",
+          "Action": "create",
+          "Actor": {
+            "ID": "c967374aa29dbeb69f57db6f53c6c77f7c94cd41fc66119bf07535e1e8e61c39",
+            "Attributes": {
+              "name": "neon-record-6"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "start",
+          "Actor": {
+            "ID": "c967374aa29dbeb69f57db6f53c6c77f7c94cd41fc66119bf07535e1e8e61c39",
+            "Attributes": {
+              "name": "neon-record-6"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "kill",
+          "Actor": {
+            "ID": "c967374aa29dbeb69f57db6f53c6c77f7c94cd41fc66119bf07535e1e8e61c39",
+            "Attributes": {
+              "name": "neon-record-6",
+              "signal": "15"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "kill",
+          "Actor": {
+            "ID": "c967374aa29dbeb69f57db6f53c6c77f7c94cd41fc66119bf07535e1e8e61c39",
+            "Attributes": {
+              "name": "neon-record-6",
+              "signal": "9"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "stop",
+          "Actor": {
+            "ID": "c967374aa29dbeb69f57db6f53c6c77f7c94cd41fc66119bf07535e1e8e61c39",
+            "Attributes": {
+              "name": "neon-record-6"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "die",
+          "Actor": {
+            "ID": "c967374aa29dbeb69f57db6f53c6c77f7c94cd41fc66119bf07535e1e8e61c39",
+            "Attributes": {
+              "name": "neon-record-6",
+              "exitCode": "137"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "start",
+          "Actor": {
+            "ID": "c967374aa29dbeb69f57db6f53c6c77f7c94cd41fc66119bf07535e1e8e61c39",
+            "Attributes": {
+              "name": "neon-record-6"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "restart",
+          "Actor": {
+            "ID": "c967374aa29dbeb69f57db6f53c6c77f7c94cd41fc66119bf07535e1e8e61c39",
+            "Attributes": {
+              "name": "neon-record-6"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "die",
+          "Actor": {
+            "ID": "c967374aa29dbeb69f57db6f53c6c77f7c94cd41fc66119bf07535e1e8e61c39",
+            "Attributes": {
+              "name": "neon-record-6",
+              "exitCode": "2"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "docker stop, start, then crash",
+      "expected": null,
+      "events": [
+        {
+          "Type": "container",
+          "Action": "create",
+          "Actor": {
+            "ID": "d50bfb3d787a631fa53de456f878a3dac367b730b77ac9a3f9910891ff658a61",
+            "Attributes": {
+              "name": "neon-record-7"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "start",
+          "Actor": {
+            "ID": "d50bfb3d787a631fa53de456f878a3dac367b730b77ac9a3f9910891ff658a61",
+            "Attributes": {
+              "name": "neon-record-7"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "kill",
+          "Actor": {
+            "ID": "d50bfb3d787a631fa53de456f878a3dac367b730b77ac9a3f9910891ff658a61",
+            "Attributes": {
+              "name": "neon-record-7",
+              "signal": "15"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "kill",
+          "Actor": {
+            "ID": "d50bfb3d787a631fa53de456f878a3dac367b730b77ac9a3f9910891ff658a61",
+            "Attributes": {
+              "name": "neon-record-7",
+              "signal": "9"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "stop",
+          "Actor": {
+            "ID": "d50bfb3d787a631fa53de456f878a3dac367b730b77ac9a3f9910891ff658a61",
+            "Attributes": {
+              "name": "neon-record-7"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "die",
+          "Actor": {
+            "ID": "d50bfb3d787a631fa53de456f878a3dac367b730b77ac9a3f9910891ff658a61",
+            "Attributes": {
+              "name": "neon-record-7",
+              "exitCode": "137"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "start",
+          "Actor": {
+            "ID": "d50bfb3d787a631fa53de456f878a3dac367b730b77ac9a3f9910891ff658a61",
+            "Attributes": {
+              "name": "neon-record-7"
+            }
+          }
+        },
+        {
+          "Type": "container",
+          "Action": "die",
+          "Actor": {
+            "ID": "d50bfb3d787a631fa53de456f878a3dac367b730b77ac9a3f9910891ff658a61",
+            "Attributes": {
+              "name": "neon-record-7",
+              "exitCode": "4"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

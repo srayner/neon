@@ -44,6 +44,7 @@ const eventTypeLabels: Record<string, string> = {
   alert_opened: 'Alert',
   alert_resolved: 'Resolved',
   alert_event: 'Event',
+  monitoring_gap: 'Gap',
 };
 
 function getEventTypeColor(eventType: string): string {
@@ -53,6 +54,7 @@ function getEventTypeColor(eventType: string): string {
       return 'bg-red-500/20 text-red-400';
     case 'killed':
     case 'restart':
+    case 'monitoring_gap':
       return 'bg-amber-500/20 text-amber-400';
     case 'stopped':
     case 'paused':

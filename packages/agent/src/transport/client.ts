@@ -2,13 +2,14 @@ import type {
   ServerInfo,
   ServerMetrics,
   ContainerInfo,
-  ProcessedContainerEvent,
+  DockerGap,
   AgentRegistrationRequest,
   AgentRegistrationResponse,
   MetricsReportRequest,
   ContainersReportRequest,
-  ContainerEventsReportRequest,
+  DockerGapsReportRequest,
   ApiResponse,
+  AgentHeartbeatRequest,
   AgentHeartbeatResponse,
 } from '@neon/shared';
 import type { AgentConfig } from '../config.js';
@@ -117,16 +118,17 @@ export class MasterClient {
   }
 
   /**
-   * Send container events to master
+   * Send gaps in the agent's view of Docker. Neon records each gap once, so
+   * resending after a failure is safe.
    */
-  async sendContainerEvents(events: ProcessedContainerEvent[]): Promise<void> {
+  async sendDockerGaps(gaps: DockerGap[]): Promise<void> {
     if (!this.token) {
       throw new Error('Not registered - call register() first');
     }
 
-    const url = `${this.config.masterUrl}/api/agent/container-events`;
+    const url = `${this.config.masterUrl}/api/agent/docker-gaps`;
 
-    const body: ContainerEventsReportRequest = { events };
+    const body: DockerGapsReportRequest = { gaps };
 
     const response = await this.fetchWithRetry(url, {
       method: 'POST',
@@ -140,14 +142,14 @@ export class MasterClient {
     const result: ApiResponse = await response.json();
 
     if (!result.success) {
-      throw new Error(`Failed to send container events: ${result.error || 'Unknown error'}`);
+      throw new Error(`Failed to send Docker gaps: ${result.error || 'Unknown error'}`);
     }
   }
 
   /**
    * Send heartbeat to master
    */
-  async heartbeat(): Promise<{ tokenExpiresIn: number }> {
+  async heartbeat(dockerReachable: boolean): Promise<{ tokenExpiresIn: number }> {
     if (!this.token) {
       throw new Error('Not registered - call register() first');
     }
@@ -163,7 +165,8 @@ export class MasterClient {
       body: JSON.stringify({
         timestamp: new Date().toISOString(),
         agentVersion: this.version,
-      }),
+        dockerReachable,
+      } satisfies AgentHeartbeatRequest),
     });
 
     const result: ApiResponse<AgentHeartbeatResponse> = await response.json();

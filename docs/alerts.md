@@ -5,7 +5,8 @@ severe it is, how it behaves over time, where it is decided and how it is
 tested. It is the source of truth: the code and its tests must follow it.
 When behaviour needs to change, change this document first.
 
-**Status:** the alert engine (sections 4, 5 and 7.1) is built. Apart from
+**Status:** the alert engine (sections 4, 5 and 7.1) and the agent's
+fact reporting (section 2) are built. Apart from
 the test alert on the Settings page, none of the alerts in section 6 is built
 yet.
 
@@ -32,16 +33,29 @@ notifications.
 | Fact | Sent |
 |---|---|
 | Server details, including OS and Docker version, and the agent's heartbeat interval | When the agent registers (on start, and when its token is renewed) |
-| Heartbeat | Every 60 seconds |
+| Heartbeat, with whether it can reach Docker | Every 60 seconds |
 | Metrics (CPU, memory, disk) | On a schedule |
 | The full list of containers and their state | On a schedule, and whenever Docker reports a container change |
-| Whether it can reach Docker | When this changes |
-| Gaps in its view of Docker (from when to when) | When it reconnects |
+| Gaps in its view of Docker (from when to when) | When it reconnects, and again until Neon accepts them |
 
 Docker sends several events for a single action (one `docker stop` produces
 `kill`, `stop` and `die`). The agent uses Docker events only as a prompt to
 read the containers' current state; it does not forward each event as a
-separate fact. The server never counts Docker events.
+separate fact. The server never counts Docker events. Events that change
+nothing, such as the `exec_*` events of every health check run, do not prompt
+a read. While one read is in progress, further events lead to one more read
+after it, not one each.
+
+Whether the agent can reach Docker is sent with every heartbeat rather than
+only when it changes, so one failed send cannot lose a change. Neon records
+the time the value last changed.
+
+For each container that is not running, the list says why it last stopped,
+as facts for the server to interpret: the exit code, whether the kernel's
+out-of-memory killer ended it, Docker's restart count, and whether Docker
+reported a `docker stop` or `docker kill` (including `docker rm -f`) just
+before the exit. Docker reports these before the exit, so the agent tells
+them apart by order, with no time window.
 
 ### The server
 

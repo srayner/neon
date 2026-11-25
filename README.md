@@ -16,7 +16,7 @@ Multi-server monitoring and management platform with real-time metrics collectio
 - **Backend**: Next.js API Routes, Prisma ORM
 - **Database**: PostgreSQL
 - **Monitoring**: systeminformation, dockerode
-- **Scheduling**: node-cron
+- **Scheduling**: timers that start the next run when the previous one finishes
 
 ## Getting Started
 
@@ -93,8 +93,9 @@ neon/
 
 ## Metrics Collection
 
-- **Server metrics**: Collected every 60 seconds
-- **Container sync**: Collected every 60 seconds
+- **Server metrics**: Collected every 60 seconds (`METRICS_INTERVAL`)
+- **Container sync**: Whenever Docker reports a container change, and every 300 seconds (`CONTAINERS_INTERVAL`)
+- **Heartbeat**: Every 60 seconds (`HEARTBEAT_INTERVAL`), including whether the agent can reach Docker
 - Data stored in PostgreSQL for historical analysis
 
 ## Alerts

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAgentToken, extractBearerToken } from "@/lib/auth/jwt";
+import { stopRequestToStore } from "@/lib/agent/stop-request";
 import type {
   ContainersReportRequest,
   ApiResponse,
@@ -254,6 +255,17 @@ export async function POST(request: NextRequest) {
       `[Agent Containers] Receiving ${containers.length} container(s) from ${serverName}`,
     );
 
+    // Each container's stored exit, to keep a stop request the agent no longer
+    // remembers (see stopRequestToStore).
+    const storedExits = new Map(
+      (
+        await prisma.container.findMany({
+          where: { serverId },
+          select: { containerId: true, finishedAt: true, stopRequest: true },
+        })
+      ).map((c) => [c.containerId, c]),
+    );
+
     // Group containers into services
     const serviceGroups = groupContainersIntoServices(containers);
 
@@ -312,6 +324,28 @@ export async function POST(request: NextRequest) {
 
       // Upsert containers for this service
       for (const container of serviceGroup.containers) {
+        // Older agents don't send the exit facts; store null rather than guess.
+        const containerData = {
+          name: container.name,
+          image: container.image,
+          imageId: container.imageId,
+          imageTags: container.imageTags,
+          status: mapContainerStatus(container.status),
+          health: container.health,
+          exitCode: container.exitCode,
+          ports: container.ports,
+          labels: container.labels,
+          networks: container.networks,
+          serviceId: service.id,
+          startedAt: container.startedAt ? new Date(container.startedAt) : null,
+          finishedAt: container.finishedAt ? new Date(container.finishedAt) : null,
+          oomKilled: container.oomKilled ?? null,
+          restartCount: container.restartCount ?? null,
+          stopRequest: stopRequestToStore(storedExits.get(container.containerId), {
+            finishedAt: container.finishedAt ?? null,
+            stopRequest: container.stopRequest ?? null,
+          }),
+        };
         await prisma.container.upsert({
           where: {
             serverId_containerId: {
@@ -319,40 +353,8 @@ export async function POST(request: NextRequest) {
               containerId: container.containerId,
             },
           },
-          update: {
-            name: container.name,
-            image: container.image,
-            imageId: container.imageId,
-            imageTags: container.imageTags,
-            status: mapContainerStatus(container.status),
-            health: container.health,
-            exitCode: container.exitCode,
-            ports: container.ports,
-            labels: container.labels,
-            networks: container.networks,
-            serviceId: service.id,
-            startedAt: container.startedAt
-              ? new Date(container.startedAt)
-              : null,
-          },
-          create: {
-            serverId,
-            containerId: container.containerId,
-            name: container.name,
-            image: container.image,
-            imageId: container.imageId,
-            imageTags: container.imageTags,
-            status: mapContainerStatus(container.status),
-            health: container.health,
-            exitCode: container.exitCode,
-            ports: container.ports,
-            labels: container.labels,
-            networks: container.networks,
-            serviceId: service.id,
-            startedAt: container.startedAt
-              ? new Date(container.startedAt)
-              : null,
-          },
+          update: containerData,
+          create: { serverId, containerId: container.containerId, ...containerData },
         });
       }
     }

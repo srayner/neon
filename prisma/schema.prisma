@@ -80,6 +80,7 @@ enum EventType {
   alert_opened
   alert_resolved
   alert_event
+  monitoring_gap
 }
 
 enum AlertKind {
@@ -129,6 +130,11 @@ model Server {
 
   // Docker info
   dockerVersion         String?         @map("docker_version")
+
+  // Agent facts
+  heartbeatIntervalSeconds Int?         @map("heartbeat_interval_seconds")
+  dockerReachable          Boolean?     @map("docker_reachable")
+  dockerReachableChangedAt DateTime?    @map("docker_reachable_changed_at")
   
   // Current/Latest metrics (updated frequently)
   currentCpuPercent     Decimal?        @map("current_cpu_percent") @db.Decimal(5, 2)
@@ -195,6 +201,10 @@ model Container {
   labels       Json            @default("{}")
   networks     String[]        @default([])
   startedAt    DateTime?       @map("started_at")
+  finishedAt   DateTime?       @map("finished_at")
+  oomKilled    Boolean?        @map("oom_killed")
+  restartCount Int?            @map("restart_count")
+  stopRequest  String?         @map("stop_request")
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
 

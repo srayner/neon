@@ -16,10 +16,6 @@ export interface AgentConfig {
   bufferEnabled: boolean;
   bufferMaxSize: number;
 
-  // Container events
-  containerEventsEnabled: boolean;
-  containerEventsBufferMaxSize: number;
-
   // Retry
   retryAttempts: number;
   retryDelayMs: number;
@@ -48,6 +44,16 @@ function optionalEnvInt(name: string, defaultValue: number): number {
   return parsed;
 }
 
+/** An interval in whole seconds; below 1 would run the task without pause. */
+function optionalEnvSeconds(name: string, defaultValue: number): number {
+  const seconds = optionalEnvInt(name, defaultValue);
+  if (seconds < 1) {
+    console.warn(`[Config] ${name} must be at least 1 second, got ${seconds}; using default: ${defaultValue}`);
+    return defaultValue;
+  }
+  return seconds;
+}
+
 function optionalEnvBool(name: string, defaultValue: boolean): boolean {
   const value = process.env[name]?.toLowerCase();
   if (!value) return defaultValue;
@@ -62,17 +68,15 @@ export function loadConfig(): AgentConfig {
     agentSecret: requireEnv('AGENT_SECRET'),
 
     // Intervals
-    metricsIntervalSeconds: optionalEnvInt('METRICS_INTERVAL', 300),
-    containersIntervalSeconds: optionalEnvInt('CONTAINERS_INTERVAL', 900),
-    heartbeatIntervalSeconds: optionalEnvInt('HEARTBEAT_INTERVAL', 60),
+    // Container changes are also picked up from Docker's events as they
+    // happen; the containers interval is a safety net.
+    metricsIntervalSeconds: optionalEnvSeconds('METRICS_INTERVAL', 60),
+    containersIntervalSeconds: optionalEnvSeconds('CONTAINERS_INTERVAL', 300),
+    heartbeatIntervalSeconds: optionalEnvSeconds('HEARTBEAT_INTERVAL', 60),
 
     // Buffering
     bufferEnabled: optionalEnvBool('BUFFER_ENABLED', true),
     bufferMaxSize: optionalEnvInt('BUFFER_MAX_SIZE', 100),
-
-    // Container events
-    containerEventsEnabled: optionalEnvBool('CONTAINER_EVENTS_ENABLED', true),
-    containerEventsBufferMaxSize: optionalEnvInt('CONTAINER_EVENTS_BUFFER_SIZE', 500),
 
     // Retry
     retryAttempts: optionalEnvInt('RETRY_ATTEMPTS', 3),
@@ -89,6 +93,4 @@ export function printConfig(config: AgentConfig): void {
   console.log(`  Heartbeat Interval: ${config.heartbeatIntervalSeconds}s`);
   console.log(`  Buffer Enabled: ${config.bufferEnabled}`);
   console.log(`  Buffer Max Size: ${config.bufferMaxSize}`);
-  console.log(`  Container Events Enabled: ${config.containerEventsEnabled}`);
-  console.log(`  Container Events Buffer Size: ${config.containerEventsBufferMaxSize}`);
 }

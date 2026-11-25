@@ -1,17 +1,22 @@
 import si from "systeminformation";
+import type Docker from "dockerode";
 import type { ServerInfo, ServerMetrics } from "@neon/shared";
 import { getHostOsInfo } from "./docker.js";
 
 /**
  * Collect static server information (called once at startup)
  */
-export async function getServerInfo(serverName: string): Promise<ServerInfo> {
+export async function getServerInfo(
+  serverName: string,
+  docker: Docker,
+  heartbeatIntervalSeconds: number,
+): Promise<ServerInfo> {
   const [cpu, mem, disk, os, hostOs] = await Promise.all([
     si.cpu(),
     si.mem(),
     si.fsSize(),
     si.osInfo(),
-    getHostOsInfo(),
+    getHostOsInfo(docker),
   ]);
 
   const totalDiskGb = disk.reduce((sum, d) => sum + d.size, 0) / 1024 ** 3;
@@ -34,6 +39,7 @@ export async function getServerInfo(serverName: string): Promise<ServerInfo> {
     osKernel,
     osArch,
     dockerVersion,
+    heartbeatIntervalSeconds,
   };
 }
 

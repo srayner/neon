@@ -1,4 +1,4 @@
-import type { ServerInfo, ServerMetrics, ContainerInfo, ProcessedContainerEvent } from './metrics.js';
+import type { ServerInfo, ServerMetrics, ContainerInfo, DockerGap } from './metrics.js';
 
 /**
  * Agent registration request - sent when agent starts
@@ -37,6 +37,7 @@ export interface ContainersReportRequest {
 export interface AgentHeartbeatRequest {
   timestamp: string;
   agentVersion: string;
+  dockerReachable: boolean;
 }
 
 /**
@@ -48,10 +49,10 @@ export interface AgentHeartbeatResponse {
 }
 
 /**
- * Container events report request - sent periodically with buffered events
+ * Docker gaps report request - sent until Neon accepts them
  */
-export interface ContainerEventsReportRequest {
-  events: ProcessedContainerEvent[];
+export interface DockerGapsReportRequest {
+  gaps: DockerGap[];
 }
 
 /**
